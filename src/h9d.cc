@@ -29,6 +29,20 @@
 #include "virtual_endpoint.h"
 
 int main(int argc, char** argv) {
+    std::set_terminate([]() {
+        std::exception_ptr ex = std::current_exception();
+        try {
+            if (ex) std::rethrow_exception(ex);
+        }
+        catch (const std::bad_exception& e) {
+            SPDLOG_CRITICAL("Bad exception: {}", e.what());
+        }
+        catch (const std::exception& e) {
+            SPDLOG_CRITICAL("Unhandled exception from: {}", e.what());
+        }
+        std::abort();
+    });
+
     H9dConfigurator configurator;
 
     configurator.parse_command_line_arg(argc, argv);

@@ -19,7 +19,7 @@ if __name__ == "__main__":
         git_ok = True
 
         output = cp.stdout.strip()
-        r = re.search('^v([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9]+)-([a-z0-9]+))?(?:-(dirty))?', output)
+        r = re.search(r'^v([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9]+)-([a-z0-9]+))?(?:-(dirty))?', output)
 
         major = r.group(1)
         minor = r.group(2)

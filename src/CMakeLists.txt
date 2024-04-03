@@ -17,11 +17,19 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     SET(ATOMIC_LINK atomic)
 endif()
 
+if(H9_DEBUG)
+    message("-! Debug enable")
+    set(H9_DEBUG TRUE)
+else()
+    message("-! Debug disable")
+    set(H9_DEBUG "")
+endif()
+
 configure_file(config_gen.h.in config_gen.h)
 
 add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
 
-set(H9D_SRC h9d.cc config.h config_gen.h
+set(H9D_SRC h9d.cc config.h
         h9d_configurator.cc h9d_configurator.h
         h9frame.cc h9frame.h
         ext_h9frame.cc ext_h9frame.h
@@ -59,7 +67,7 @@ set(H9D_SRC h9d.cc config.h config_gen.h
         dev_loader.cc dev_loader.h
         libconfuse_helper.cc libconfuse_helper.h)
 
-set(CLIENT_COMMON_SRC config.h config_gen.h
+set(CLIENT_COMMON_SRC config.h
         h9frame.cc h9frame.h
         ext_h9frame.cc ext_h9frame.h
         h9socket.cc h9socket.h
@@ -69,11 +77,11 @@ set(CLIENT_COMMON_SRC config.h config_gen.h
         fmt_helpers.cc fmt_helpers.h
         libconfuse_helper.cc libconfuse_helper.h)
 
-set(H9SNIFFER_SRC h9sniffer.cc config.h config_gen.h)
+set(H9SNIFFER_SRC h9sniffer.cc config.h)
 
-set(H9SEND_SRC h9send.cc config.h config_gen.h)
+set(H9SEND_SRC h9send.cc config.h)
 
-set(H9STATS_SRC h9stats.cc config.h config_gen.h)
+set(H9STATS_SRC h9stats.cc config.h)
 
 set(H9FWUPLOAD_SRC h9fwupload.cc config.h config_gen.h.in firmware_uploader.cc firmware_uploader.h)
 

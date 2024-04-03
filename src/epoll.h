@@ -20,7 +20,7 @@ class Epoll {
     int event_fd;
 
   public:
-    constexpr static char notification_mechanism_name[] = "kqueue";
+    constexpr static char notification_mechanism_name[] = "epoll";
 
     Epoll();
     ~Epoll();

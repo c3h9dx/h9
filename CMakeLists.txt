@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.24)
 
-project(h9 VERSION 0.3.0)
+project(h9 VERSION 0.3.1)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 23)
 
 option(H9_DEBUG "Enable debug")
 
@@ -44,7 +44,8 @@ add_subdirectory(src)
 
 install(FILES conf/h9d.conf DESTINATION /etc/h9)
 install(FILES conf/h9.conf DESTINATION /etc/h9)
-install(FILES conf/devices.conf DESTINATION /etc/h9)
+install(FILES conf/nodes.conf DESTINATION /etc/h9)
+install(FILES conf/dev.conf DESTINATION /etc/h9)
 install(FILES systemd/h9d.service DESTINATION /etc/systemd/system)
 install(DIRECTORY virtual_node DESTINATION lib/h9)
 install(DIRECTORY DESTINATION /var/log/h9)

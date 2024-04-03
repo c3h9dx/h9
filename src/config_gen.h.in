@@ -17,5 +17,3 @@
 #define H9_VERSION "@H9_VERSION@"
 #cmakedefine H9_DEBUG
 #cmakedefine H9_SOCKETCAN_DRIVER
-
-#cmakedefine H9_SOCKETCAN_DRIVER

@@ -63,7 +63,7 @@ int H9MsgSocket::authentication(const std::string& entity) {
 }
 
 int H9MsgSocket::send(const nlohmann::json& json) noexcept {
-    return H9Socket::send(json.dump());
+    return H9Socket::send(json.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace));
 }
 
 int H9MsgSocket::recv(nlohmann::json& json, int timeout_in_seconds) noexcept {

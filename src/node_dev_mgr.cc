@@ -31,7 +31,7 @@ void NodeDevMgr::nodes_dev_update_thread() {
 #if defined(__APPLE__) && defined(__MACH__)
     pthread_setname_np("node_dev");
 #elif defined(__linux__)
-    pthread_setname_np(recv_thread_desc.native_handle(), "node_dev");
+    pthread_setname_np(nodes_update_thread_desc.native_handle(), "node_dev");
 #endif
 
     while (nodes_update_thread_run) {
