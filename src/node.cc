@@ -52,6 +52,8 @@ Node::Node(NodeDevMgr* node_mgr, Bus* bus, std::uint16_t node_id, std::uint16_t 
 }
 
 Node::~Node() {
+    detach();
+
     SPDLOG_LOGGER_TRACE(logger, "~Node() {}", fmt::ptr(this));
 }
 

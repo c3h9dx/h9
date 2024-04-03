@@ -38,6 +38,10 @@ void TCPClientThread::thread() {
     // execadapter.cleanup_connection();
     SPDLOG_LOGGER_TRACE(logger, "Client ({}) thread finish.", get_client_idstring());
     thread_running = false;
+
+    if (_frame_observer) _frame_observer->detach();
+    if (_dev_status_observer) _dev_status_observer->detach();
+
     server->cleanup_tcpclientthread(this);
 }
 

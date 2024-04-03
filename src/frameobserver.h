@@ -17,13 +17,17 @@ class FrameSubject;
 
 class FrameObserver {
   private:
-    FrameSubject* const subject;
+    FrameSubject* subject;
   protected:
     friend class FrameSubject;
 
     FrameObserver(FrameSubject* subject, H9FrameComparator comparator);
     FrameObserver(const FrameObserver&) = delete;
     ~FrameObserver();
+
     virtual void on_frame_recv(const ExtH9Frame& frame) = 0;
     virtual void on_frame_send(const ExtH9Frame& frame) = 0;
+
+  public:
+    void detach();
 };

@@ -14,8 +14,15 @@ DevStatusObserver::DevStatusObserver(TCPClientThread* tcp_client_thread, NodeDev
     mgr->attach_dev_state_observer("*", this);
 }
 
-DevStatusObserver::~DevStatusObserver() {
+void DevStatusObserver::detach() {
     mgr->detach_dev_state_observer("*", this);
+    SPDLOG_TRACE("DevStatusObserver::detach(this={}) [NodeDevMgr={}]", fmt::ptr(this), fmt::ptr(mgr));
+    mgr = nullptr;
+}
+
+DevStatusObserver::~DevStatusObserver() {
+    assert(mgr == nullptr);
+    SPDLOG_TRACE("~DevStatusObserver(this={})", fmt::ptr(this));
 }
 
 void DevStatusObserver::on_dev_state_update(const nlohmann::json& dev_status) {

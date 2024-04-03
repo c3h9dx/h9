@@ -23,7 +23,7 @@ class FrameSubject {
     std::map<H9FrameComparator, std::list<FrameObserver*>> frame_observers;
 
     friend FrameObserver::FrameObserver(FrameSubject* subject, H9FrameComparator comparator);
-    friend FrameObserver::~FrameObserver();
+    friend void FrameObserver::detach();
 
     void attach_frame_observer(FrameObserver* observer, H9FrameComparator comparator);
     void detach_frame_observer(FrameObserver* observer);

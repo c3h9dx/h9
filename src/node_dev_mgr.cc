@@ -80,6 +80,8 @@ void NodeDevMgr::nodes_dev_update_thread() {
             }
         }
     }
+
+    frame_obs.detach();
 }
 
 void NodeDevMgr::update_dev_after_node_discovered(std::uint16_t node_id, std::uint16_t node_type) {
