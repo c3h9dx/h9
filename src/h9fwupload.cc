@@ -186,10 +186,10 @@ int main(int argc, char** argv) {
     auto stop_time = std::chrono::steady_clock::now();
     auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>( stop_time - start_time ).count();
 
-    fmt::println("Frame recv: {} ({:.2f} f/s)", fw_up.recv_frame_count, (fw_up.recv_frame_count * 1000.0) / duration_ms);
-    fmt::println("Frame sent: {} ({:.2f} f/s)", fw_up.sent_frame_count, (fw_up.sent_frame_count * 1000.0) / duration_ms);
-    fmt::println("Time: {}", duration_ms);
-    fmt::println("Speed: {:.2f} B/s", (fw_size * 1000.0) / duration_ms);
+    fmt::print("Frame recv: {} ({:.2f} f/s)\n", fw_up.recv_frame_count, (fw_up.recv_frame_count * 1000.0) / duration_ms);
+    fmt::print("Frame sent: {} ({:.2f} f/s)\n", fw_up.sent_frame_count, (fw_up.sent_frame_count * 1000.0) / duration_ms);
+    fmt::print("Time: {}\n", duration_ms);
+    fmt::print("Speed: {:.2f} B/s\n", (fw_size * 1000.0) / duration_ms);
 
     delete bus;
     return EXIT_SUCCESS;
