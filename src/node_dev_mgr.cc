@@ -28,11 +28,11 @@ void NodeDevMgr::on_frame_recv(const ExtH9Frame& frame) noexcept {
 }
 
 void NodeDevMgr::nodes_dev_update_thread() {
-#if defined(__APPLE__) && defined(__MACH__)
-    pthread_setname_np("node_dev");
-#elif defined(__linux__)
-    pthread_setname_np(nodes_update_thread_desc.native_handle(), "node_dev");
-#endif
+//#if defined(__APPLE__) && defined(__MACH__)
+//    pthread_setname_np("node_dev");
+//#elif defined(__linux__)
+//    pthread_setname_np(nodes_update_thread_desc.native_handle(), "node_dev");
+//#endif
 
     while (nodes_update_thread_run) {
         std::unique_lock<std::mutex> lk(frame_queue_mtx);

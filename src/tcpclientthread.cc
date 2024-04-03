@@ -167,8 +167,7 @@ TCPClientThread::TCPClientThread(int sockfd, API* api, TCPServer* server):
 }
 
 TCPClientThread::~TCPClientThread() {
-    SPDLOG_LOGGER_TRACE(logger, "~TCPClientThread() {}", fmt::ptr(this));
-    SPDLOG_LOGGER_DEBUG(logger, "Cleaning client ({}) data...", get_client_idstring());
+    SPDLOG_LOGGER_DEBUG(logger, "Cleaning client ({}) data... [this={}]", get_client_idstring(), fmt::ptr(this));
     delete _frame_observer;
     delete _dev_status_observer;
 
@@ -176,6 +175,7 @@ TCPClientThread::~TCPClientThread() {
     if (client_thread_desc.joinable())
         client_thread_desc.join();
     h9socket.close();
+    SPDLOG_LOGGER_TRACE(logger, "~TCPClientThread() [this={}]", fmt::ptr(this));
 }
 
 void TCPClientThread::set_frame_observer(ClientFrameObs* frame_observer) {

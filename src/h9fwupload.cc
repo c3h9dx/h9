@@ -5,6 +5,8 @@
  *
  * Copyright (C) 2023 Kamil Palkowski. All rights reserved.
  */
+
+#include <chrono>
 #include <cstdlib>
 #include <spdlog/spdlog.h>
 
@@ -135,7 +137,7 @@ int main(int argc, char** argv) {
     H9Connector h9_connector = h9.get_connector();
 
     try {
-        h9_connector.connect("h9sniffer");
+        h9_connector.connect("h9fwupload");
     }
     catch (std::system_error& e) {
         SPDLOG_ERROR("Can not connect to h9bus {}:{}: {}.", h9.get_host(), h9.get_port(), e.code().message());
@@ -159,6 +161,8 @@ int main(int argc, char** argv) {
         bus = new BusOverH9TCP(&h9_connector);
     }
 
+    auto start_time = std::chrono::steady_clock::now();
+
     if (h9.noupgrademsg) { //skip NODE_UPGRADE frame
         ExtH9Frame frame;
         frame.type(H9frame::Type::PAGE_START);
@@ -178,6 +182,14 @@ int main(int argc, char** argv) {
 
     FirmwareUploader fw_up = {fw, fw_size, h9.dst_id};
     fw_up.upload(bus);
+
+    auto stop_time = std::chrono::steady_clock::now();
+    auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>( stop_time - start_time ).count();
+
+    fmt::println("Frame recv: {} ({:.2f} f/s)", fw_up.recv_frame_count, (fw_up.recv_frame_count * 1000.0) / duration_ms);
+    fmt::println("Frame sent: {} ({:.2f} f/s)", fw_up.sent_frame_count, (fw_up.sent_frame_count * 1000.0) / duration_ms);
+    fmt::println("Time: {}", duration_ms);
+    fmt::println("Speed: {:.2f} B/s", (fw_size * 1000.0) / duration_ms);
 
     delete bus;
     return EXIT_SUCCESS;

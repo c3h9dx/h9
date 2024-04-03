@@ -25,4 +25,5 @@ void ClientFrameObs::on_frame_send(const ExtH9Frame& frame) {
 ClientFrameObs::ClientFrameObs(TCPClientThread* tcp_client_thread, FrameSubject* subject, H9FrameComparator comparator):
     FrameObserver(subject, comparator),
     client(tcp_client_thread) {
+    SPDLOG_TRACE("FrameObserver(TCPClientThread={}, FrameSubject={}) [this={}]", fmt::ptr(tcp_client_thread), fmt::ptr(subject), fmt::ptr(this));
 }

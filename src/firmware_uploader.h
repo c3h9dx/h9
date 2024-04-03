@@ -15,6 +15,9 @@ class FirmwareUploader {
     const std::size_t fw_size;
     const std::uint16_t node_id;
   public:
+    uint32_t recv_frame_count;
+    uint32_t sent_frame_count;
+
     constexpr static const char* mcu_map[] = {"UNKNOWN",      // 0
                                               "ATmega16M1",   // 1
                                               "ATmega32M1",   // 2

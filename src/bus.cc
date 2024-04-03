@@ -81,11 +81,11 @@ bool Bus::recv_thread_forward() {
 }
 
 void Bus::recv_thread() {
-#if defined(__APPLE__) && defined(__MACH__)
-    pthread_setname_np("bus");
-#elif defined(__linux__)
-    pthread_setname_np(recv_thread_desc.native_handle(), "bus");
-#endif
+//#if defined(__APPLE__) && defined(__MACH__)
+//    pthread_setname_np("bus");
+//#elif defined(__linux__)
+//    pthread_setname_np(recv_thread_desc.native_handle(), "bus");
+//#endif
 
     if (_forwarding)
         SPDLOG_LOGGER_INFO(logger, "Frame forwarding is enable.");

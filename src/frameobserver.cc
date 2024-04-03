@@ -18,4 +18,6 @@ FrameObserver::FrameObserver(FrameSubject* subject, H9FrameComparator comparator
 
 FrameObserver::~FrameObserver() {
     subject->detach_frame_observer(this);
+
+    SPDLOG_TRACE("~FrameObserver() [FrameSubject={}, this={}]", fmt::ptr(subject), fmt::ptr(this));
 }
