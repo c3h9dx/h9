@@ -61,15 +61,15 @@ void print_reg_value(const H9frame& frame) {
             break;
         }
         char buf[8] = {'\0'};
-        for (int i = frame.dlc - 1; i > 0; --i) {
-            if (isprint(frame.data[i])) {
-                buf[i - 1] = frame.data[i];
+        for (int i = 0; i < frame.dlc-1; ++i) {
+            if (isprint(frame.data[i+1])) {
+                buf[i] = frame.data[i+1];
             }
             else {
                 break;
             }
         }
-        std::cout << " " << buf << std::endl;
+        std::cout << " '" << buf << "'" << std::endl;
     }
 }
 
