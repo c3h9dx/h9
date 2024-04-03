@@ -66,6 +66,7 @@ void print_reg_value(const H9frame& frame) {
                 buf[i] = frame.data[i+1];
             }
             else {
+                buf[i] = '\0';
                 break;
             }
         }
