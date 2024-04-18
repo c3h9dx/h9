@@ -128,12 +128,13 @@ char* CLIParsingDriver::unescape(const char* str) {
     unescaped[j] = '\0';
 
     char* resized_unescaped;
-    if ((resized_unescaped = static_cast<char*>(realloc(unescaped, j))) == nullptr && j != 0) {
-        free(unescaped);
+    if ((resized_unescaped = static_cast<char*>(realloc(unescaped, j))) == nullptr) {
+        if (j != 0) {
+            free(unescaped);
+            SPDLOG_ERROR("realloc error");
+        }
         resized_unescaped = nullptr;
-        SPDLOG_ERROR("realloc error");
     }
-    ;
     return resized_unescaped;
 }
 
