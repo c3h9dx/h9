@@ -11,6 +11,7 @@
 #include <sys/eventfd.h>
 #include <system_error>
 #include <unistd.h>
+#include <spdlog/spdlog.h>
 
 Epoll::Epoll():
     epoll(-1),
@@ -49,7 +50,14 @@ void Epoll::attach_socket(int fd) {
 }
 
 int Epoll::wait() {
-    int ret = epoll_wait(epoll, tevent, event_queue_size, -1);
+    int ret;
+    do {
+        ret = epoll_wait(epoll, tevent, event_queue_size, -1);
+        if (ret < 0 && errno == EINTR) {
+            SPDLOG_WARN("epoll_wait: Interrupted system call");
+        }
+    } while (ret < 0 && errno == EINTR);
+
     if (ret == -1) {
         throw std::system_error(errno, std::generic_category(), __FILE__ + std::string(":") + std::to_string(__LINE__));
     }
