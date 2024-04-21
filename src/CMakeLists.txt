@@ -67,7 +67,7 @@ set(H9D_SRC h9d.cc config.h
         dev_status_observer.cc dev_status_observer.h
         fmt_helpers.cc fmt_helpers.h
         dev_loader.cc dev_loader.h
-        libconfuse_helper.cc libconfuse_helper.h)
+        libconfuse_helper.cc libconfuse_helper.h udp_driver.cc udp_driver.h)
 
 set(CLIENT_COMMON_SRC config.h
         h9frame.cc h9frame.h

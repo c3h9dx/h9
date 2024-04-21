@@ -21,6 +21,7 @@
 #include <unistd.h>
 
 #include "loop_driver.h"
+#include "udp_driver.h"
 #include "slcan_driver.h"
 #include "socketcan_driver.h"
 #include "git_version.h"
@@ -280,6 +281,9 @@ void H9dConfigurator::load_configuration() {
         CFG_STR("driver", nullptr, CFGF_NONE),
         CFG_STR("tty", nullptr, CFGF_NONE),
         CFG_STR("interface", nullptr, CFGF_NONE),
+        CFG_STR("local_port", nullptr, CFGF_NONE),
+        CFG_STR("remote_port", nullptr, CFGF_NONE),
+        CFG_STR("remote_addr", nullptr, CFGF_NONE),
         CFG_END()};
 
     cfg_opt_t cfg_bus_opts[] = {
@@ -427,6 +431,34 @@ void H9dConfigurator::configure_bus(Bus* bus, VirtualEndpoint* vendpoint) {
             if (driver == "loop") {
                 bus->add_driver(new LoopDriver(endpoint_name));
             }
+            else if (driver == "udp") {
+                std::string local_port;
+                std::string remote_port;
+                std::string remote_addr;
+
+                if (cfg_getstr(endpoint_section, "local_port")) {
+                    local_port = cfg_getstr(endpoint_section, "local_port");
+                }
+                else {
+                    SPDLOG_CRITICAL("Missing option 'local_port' for {}.", cfg_title(endpoint_section));
+                    exit(EXIT_FAILURE);
+                }
+                if (cfg_getstr(endpoint_section, "remote_port")) {
+                    remote_port = cfg_getstr(endpoint_section, "remote_port");
+                }
+                else {
+                    SPDLOG_CRITICAL("Missing option 'remote_port' for {}.", cfg_title(endpoint_section));
+                    exit(EXIT_FAILURE);
+                }
+                if (cfg_getstr(endpoint_section, "remote_addr")) {
+                    remote_addr = cfg_getstr(endpoint_section, "remote_addr");
+                }
+                else {
+                    SPDLOG_CRITICAL("Missing option 'remote_addr' for {}.", cfg_title(endpoint_section));
+                    exit(EXIT_FAILURE);
+                }
+                bus->add_driver(new UDPDriver(endpoint_name, local_port, remote_addr, remote_port));
+            }
             else if (driver == "virtual" && vendpoint) {
                 if (vendpoint->is_configured()) {
                     bus->add_driver(vendpoint->get_driver(endpoint_name));
@@ -441,7 +473,7 @@ void H9dConfigurator::configure_bus(Bus* bus, VirtualEndpoint* vendpoint) {
                     bus->add_driver(new SlcanDriver(endpoint_name, tty));
                 }
                 else {
-                    SPDLOG_CRITICAL("Missing option 'connection_string' for {}.", cfg_title(endpoint_section));
+                    SPDLOG_CRITICAL("Missing option 'tty' for {}.", cfg_title(endpoint_section));
                     exit(EXIT_FAILURE);
                 }
             }
