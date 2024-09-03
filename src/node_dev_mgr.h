@@ -61,7 +61,7 @@ class NodeDevMgr: public FrameSubject {
     std::shared_mutex dev_status_observer_mtx;
 
     std::map<std::uint16_t, Node*> nodes_map;
-    std::vector<Dev*> loaded_inactive_dev;
+    //std::vector<Dev*> loaded_inactive_dev;
     std::map<std::string, Dev*> devs_map;
     std::vector<DevStatusObserver*> dev_status_observer;
 
@@ -104,7 +104,7 @@ class NodeDevMgr: public FrameSubject {
     void load_devs_configuration(const std::string& devs_description_filename);
 
     void response_timeout_duration(int response_timeout_duration);
-    int response_timeout_duration();
+    int response_timeout_duration() const;
 
     int discover();
 
@@ -133,7 +133,9 @@ class NodeDevMgr: public FrameSubject {
     };
 
     std::vector<NodeDevMgr::DevDsc> get_devs_list() noexcept;
-    nlohmann::json call_dev_method(const std::string& dev_id, const TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params);
+    nlohmann::json call_dev_method(const std::string& dev_name, const TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params);
+    nlohmann::json get_dev_description(const std::string& dev_name, const TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params);
+    nlohmann::json get_dev_state(const std::string& dev_name, const TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params);
 
     void emit_dev_state(const std::string& dev_id, const nlohmann::json& dev_status);
     void attach_dev_state_observer(const std::string& dev_id, DevStatusObserver* obs);

@@ -181,7 +181,7 @@ nlohmann::json API::get_node_info(TCPClientThread* client_thread, const jsonrpcp
     }
     NodeDevMgr::NodeInfo device_info;
     if (node_dev_mgr->get_node_info(node_id, device_info) < 0) {
-        throw jsonrpcpp::RequestException(jsonrpcpp::Error("Node " + std::to_string(node_id) + "does not exist.", NODE_DOES_NOT_EXIST), id);
+        throw jsonrpcpp::RequestException(jsonrpcpp::Error("Node " + std::to_string(node_id) + "does not exist.", NODE_IS_NOT_EXIST), id);
     }
 
     char ct[std::size("yyyy-mm-ddThh:mm:ssZ")];
@@ -228,10 +228,8 @@ nlohmann::json API::node_reset(TCPClientThread* client_thread, const jsonrpcpp::
         node_dev_mgr->node_reset(node_id);
     }
     catch (DevNodeException& e) {
-        throw jsonrpcpp::RequestException(jsonrpcpp::Error(e.what(), -1), id);
+        throw jsonrpcpp::RequestException(jsonrpcpp::Error(e.what(), e.code()), id);
     }
-
-    // nlohmann::json::boolean_t r = true;
 
     return true;
 }
@@ -266,7 +264,7 @@ nlohmann::json API::get_registers_list(TCPClientThread* client_thread, const jso
         }
         return std::move(r);
     }
-    throw jsonrpcpp::RequestException(jsonrpcpp::Error("Node " + std::to_string(node_id) + "does not exist.", NODE_DOES_NOT_EXIST), id);
+    throw jsonrpcpp::RequestException(jsonrpcpp::Error("Node " + std::to_string(node_id) + "does not exist.", NODE_IS_NOT_EXIST), id);
 }
 
 nlohmann::json API::get_register_value(TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params) {
@@ -302,7 +300,7 @@ nlohmann::json API::get_register_value(TCPClientThread* client_thread, const jso
         }
     }
     catch (DevNodeException& e) {
-        throw jsonrpcpp::RequestException(jsonrpcpp::Error(e.what(), -1), id);
+        throw jsonrpcpp::RequestException(jsonrpcpp::Error(e.what(), e.code()), id);
     }
 
     return std::move(r);
@@ -356,7 +354,7 @@ nlohmann::json API::set_register_value(TCPClientThread* client_thread, const jso
         }
     }
     catch (DevNodeException& e) {
-        throw jsonrpcpp::RequestException(jsonrpcpp::Error(e.what(), -1), id);
+        throw jsonrpcpp::RequestException(jsonrpcpp::Error(e.what(), e.code()), id);
     }
 
     return std::move(r);
@@ -397,7 +395,7 @@ nlohmann::json API::set_register_bit(TCPClientThread* client_thread, const jsonr
         }
     }
     catch (DevNodeException& e) {
-        throw jsonrpcpp::RequestException(jsonrpcpp::Error(e.what(), -1), id);
+        throw jsonrpcpp::RequestException(jsonrpcpp::Error(e.what(), e.code()), id);
     }
 
     return std::move(r);
@@ -438,7 +436,7 @@ nlohmann::json API::clear_register_bit(TCPClientThread* client_thread, const jso
         }
     }
     catch (DevNodeException& e) {
-        throw jsonrpcpp::RequestException(jsonrpcpp::Error(e.what(), -1), id);
+        throw jsonrpcpp::RequestException(jsonrpcpp::Error(e.what(), e.code()), id);
     }
 
     return std::move(r);
@@ -479,7 +477,7 @@ nlohmann::json API::toggle_register_bit(TCPClientThread* client_thread, const js
         }
     }
     catch (DevNodeException& e) {
-        throw jsonrpcpp::RequestException(jsonrpcpp::Error(e.what(), -1), id);
+        throw jsonrpcpp::RequestException(jsonrpcpp::Error(e.what(), e.code()), id);
     }
 
     return std::move(r);
@@ -493,15 +491,11 @@ nlohmann::json API::get_devs_list(TCPClientThread* client_thread, const jsonrpcp
     return std::move(r);
 }
 
-nlohmann::json API::dev_call(TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params) {
-    std::string dev_id;
-    nlohmann::json r;
+nlohmann::json API::get_dev_description(TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params) {
+    std::string dev_name;
 
     try {
-        dev_id = params.param_map.at("dev_id").get<std::string>();
-        params.param_map.at("method").get<std::string>(); // exist check
-
-        r = node_dev_mgr->call_dev_method(dev_id, client_thread, id, params);
+        dev_name = params.param_map.at("dev_name").get<std::string>();
     }
     catch (std::out_of_range& e) {
         SPDLOG_ERROR("Incorrect parameters during invoke '{}' by {} - {}", __FUNCTION__, client_thread->get_client_idstring(), e.what());
@@ -512,6 +506,74 @@ nlohmann::json API::dev_call(TCPClientThread* client_thread, const jsonrpcpp::Id
         SPDLOG_ERROR("Incorrect parameters during invoke '{}' by {} - {}", __FUNCTION__, client_thread->get_client_idstring(), e.what());
         SPDLOG_DEBUG("Dump '{}' calling params: {}.", __FUNCTION__, params.to_json().dump());
         throw jsonrpcpp::InvalidParamsException(e.what(), id);
+    }
+
+    nlohmann::json r;
+
+    try {
+        r = node_dev_mgr->get_dev_description(dev_name, client_thread, id, params);
+    }
+    catch (DevNodeException& e) {
+        throw jsonrpcpp::RequestException(jsonrpcpp::Error(e.what(), e.code()), id);
+    }
+
+    return std::move(r);
+}
+
+nlohmann::json API::get_dev_status(TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params) {
+    std::string dev_name;
+
+    try {
+        dev_name = params.param_map.at("dev_name").get<std::string>();
+    }
+    catch (std::out_of_range& e) {
+        SPDLOG_ERROR("Incorrect parameters during invoke '{}' by {} - {}", __FUNCTION__, client_thread->get_client_idstring(), e.what());
+        SPDLOG_DEBUG("Dump '{}' calling params: {}.", __FUNCTION__, params.to_json().dump());
+        throw jsonrpcpp::InvalidParamsException(e.what(), id);
+    }
+    catch (nlohmann::detail::type_error& e) {
+        SPDLOG_ERROR("Incorrect parameters during invoke '{}' by {} - {}", __FUNCTION__, client_thread->get_client_idstring(), e.what());
+        SPDLOG_DEBUG("Dump '{}' calling params: {}.", __FUNCTION__, params.to_json().dump());
+        throw jsonrpcpp::InvalidParamsException(e.what(), id);
+    }
+
+    nlohmann::json r;
+
+    try {
+        r = node_dev_mgr->get_dev_state(dev_name, client_thread, id, params);
+    }
+    catch (DevNodeException& e) {
+        throw jsonrpcpp::RequestException(jsonrpcpp::Error(e.what(), e.code()), id);
+    }
+
+    return std::move(r);
+}
+
+nlohmann::json API::dev_method_call(TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params) {
+    std::string dev_name;
+
+    try {
+        dev_name = params.param_map.at("dev_name").get<std::string>();
+        params.param_map.at("method").get<std::string>(); // exist check
+    }
+    catch (std::out_of_range& e) {
+        SPDLOG_ERROR("Incorrect parameters during invoke '{}' by {} - {}", __FUNCTION__, client_thread->get_client_idstring(), e.what());
+        SPDLOG_DEBUG("Dump '{}' calling params: {}.", __FUNCTION__, params.to_json().dump());
+        throw jsonrpcpp::InvalidParamsException(e.what(), id);
+    }
+    catch (nlohmann::detail::type_error& e) {
+        SPDLOG_ERROR("Incorrect parameters during invoke '{}' by {} - {}", __FUNCTION__, client_thread->get_client_idstring(), e.what());
+        SPDLOG_DEBUG("Dump '{}' calling params: {}.", __FUNCTION__, params.to_json().dump());
+        throw jsonrpcpp::InvalidParamsException(e.what(), id);
+    }
+
+    nlohmann::json r;
+
+    try {
+        r = node_dev_mgr->call_dev_method(dev_name, client_thread, id, params);
+    }
+    catch (DevNodeException& e) {
+        throw jsonrpcpp::RequestException(jsonrpcpp::Error(e.what(), e.code()), id);
     }
 
     return std::move(r);
@@ -538,7 +600,9 @@ API::API(Bus* bus, NodeDevMgr* dev_mgr):
     api_methods["clear_register_bit"] = &API::clear_register_bit;
     api_methods["toggle_register_bit"] = &API::toggle_register_bit;
     api_methods["get_devs_list"] = &API::get_devs_list;
-    api_methods["dev_call"] = &API::dev_call;
+    api_methods["get_dev_description"] = &API::get_dev_description;
+    api_methods["get_dev_status"] = &API::get_dev_status;
+    api_methods["dev_method_call"] = &API::dev_method_call;
 }
 
 void API::set_tcp_server(TCPServer* tcp_server) {

@@ -108,6 +108,23 @@ void CommandExecutor::print_response(const std::string& method, const nlohmann::
                 fmt::print("\n");
         }
     }
+    else if (method == "get_nodes_list") {
+        for (auto& node : result) {
+            fmt::print("{}:\n", node["id"].get<unsigned int>());
+            fmt::print("    type:       {}\n", node["type"].get<unsigned int>());
+            fmt::print("    type name:  {}\n", node["name"].get<std::string>());
+            if (node != result.back())
+                fmt::print("\n");
+        }
+    }
+    else if (method == "get_devs_list") {
+        for (auto& dev : result) {
+            fmt::print("{}:\n", dev["name"].get<std::string>());
+            fmt::print("    type:       {}\n", dev["type"].get<std::string>());
+            if (dev != result.back())
+                fmt::print("\n");
+        }
+    }
     else {
         std::cout << result << std::endl;
     }

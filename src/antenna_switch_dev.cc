@@ -15,6 +15,8 @@ AntennaSwitchDev::AntennaSwitchDev(std::string name, NodeDevMgr* node_mgr, std::
     controller_node_id(0xffff),
     selected_antenna(0),
     number_of_antenna(0) {
+
+    add_method("select_antenna", &AntennaSwitchDev::select_antenna_method);
 }
 
 AntennaSwitchDev::AntennaSwitchDev(std::string name, NodeDevMgr* node_mgr, std::uint16_t switch_node_id, std::uint16_t controller_node_id):
@@ -23,6 +25,17 @@ AntennaSwitchDev::AntennaSwitchDev(std::string name, NodeDevMgr* node_mgr, std::
     controller_node_id(controller_node_id),
     selected_antenna(0),
     number_of_antenna(0) {
+
+    add_method("select_antenna", &AntennaSwitchDev::select_antenna_method);
+}
+
+void AntennaSwitchDev::init() {
+//    selected_antenna = std::get<std::int64_t>(node_mgr->get_register(switch_node_id, ANTENNA_SELECT_REG));
+//    number_of_antenna = std::get<std::int64_t>(node_mgr->get_register(switch_node_id, NUMBER_OF_ANTENNAS_REG));
+//
+//    for (int i = 0; i < number_of_antenna; ++i) {
+//        antenna_name[i] = std::get<std::string>(node_mgr->get_register(switch_node_id, FIRST_ANTENNA_NAME + i));
+//    }
 }
 
 void AntennaSwitchDev::update_dev_state(std::uint16_t node_id, const ExtH9Frame& frame) {
@@ -80,32 +93,10 @@ void AntennaSwitchDev::update_dev_state(std::uint16_t node_id, const ExtH9Frame&
                     {"antennas_name", std::vector<std::string>(antenna_name, &antenna_name[number_of_antenna])}});
 }
 
-void AntennaSwitchDev::init() {
-    selected_antenna = std::get<std::int64_t>(node_mgr->get_register(switch_node_id, ANTENNA_SELECT_REG));
-    number_of_antenna = std::get<std::int64_t>(node_mgr->get_register(switch_node_id, NUMBER_OF_ANTENNAS_REG));
-
-    for (int i = 0; i < number_of_antenna; ++i) {
-        antenna_name[i] = std::get<std::string>(node_mgr->get_register(switch_node_id, FIRST_ANTENNA_NAME + i));
-    }
-}
-
-nlohmann::json AntennaSwitchDev::dev_call(const TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params) {
-    std::string method = params.param_map.at("method").get<std::string>();
-
-    if (method == std::string("select_antenna")) {
-        int antenna_number = params.param_map.at("antenna_number").get<int>();
-        select_antenna(antenna_number);
-    }
-    else if (method == std::string("get_state")) {
-        return {{"selected_antenna", selected_antenna},
-                {"number_of_antenna", number_of_antenna},
-                {"antennas_name", std::vector<std::string>(antenna_name, &antenna_name[number_of_antenna])}};
-    }
-    else {
-        throw jsonrpcpp::InvalidParamsException("Dev object does not provide '" + method + "' method.", id);
-    }
-
-    return {};
+nlohmann::json AntennaSwitchDev::get_dev_state(const std::map<std::string, nlohmann::json>& param_map) {
+    return {{"selected_antenna", selected_antenna},
+            {"number_of_antenna", number_of_antenna},
+            {"antennas_name", std::vector<std::string>(antenna_name, &antenna_name[number_of_antenna])}};
 }
 
 void AntennaSwitchDev::select_antenna(int antenna_number) {
@@ -115,4 +106,10 @@ void AntennaSwitchDev::select_antenna(int antenna_number) {
     catch (DevNodeException& e) {
         SPDLOG_ERROR(e.what());
     }
+}
+
+nlohmann::json AntennaSwitchDev::select_antenna_method(const std::map<std::string, nlohmann::json>& param_map) {
+    int antenna_number = param_map.at("antenna_number").get<int>();
+    select_antenna(antenna_number);
+    return {};
 }

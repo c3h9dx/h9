@@ -70,6 +70,7 @@ class CLIParsingDriver {
     char* cli_node_completion(const char* text, int state);
     char* cli_register_completion(const char* text, int state);
     char* cli_bit_completion(const char* text, int state);
+    char* cli_dev_completion(const char* text, int state);
 
     yy::parser::symbol_type tee_token(yy::parser::symbol_type symbol);
     void set_last_parsed_node_id(std::uint16_t id);

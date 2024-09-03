@@ -44,7 +44,7 @@ void NodeDevMgr::nodes_dev_update_thread() {
 
         SPDLOG_LOGGER_TRACE(logger, "Devices update thread: pop frame (remained {}).", remained_frame);
 
-        if (frame.type() == H9frame::Type::NODE_INFO) {
+        if (frame.type() == H9frame::Type::NODE_INFO || frame.type() == H9frame::Type::NODE_TURNED_ON) {
             uint16_t node_type = frame.data()[0] << 8 | frame.data()[1];
             uint16_t version_major = frame.data()[2] << 8 | frame.data()[3];
             uint16_t version_minor = frame.data()[4] << 8 | frame.data()[5];
@@ -52,23 +52,15 @@ void NodeDevMgr::nodes_dev_update_thread() {
             uint64_t version = version_major;
             version = version << 16 | version_minor;
             version = version << 16 | version_patch;
-            SPDLOG_LOGGER_INFO(logger, "Dev discovered id: {}, type: {}, version: {}.{}.{}.", frame.source_id(), frame.data()[0] << 8 | frame.data()[1], version_major, version_minor, version_patch);
+            if (frame.type() == H9frame::Type::NODE_TURNED_ON) {
+                SPDLOG_LOGGER_INFO(logger, "Dev turned on id: {}, type: {}, version: {}.{}.{}.", frame.source_id(), frame.data()[0] << 8 | frame.data()[1], version_major, version_minor, version_patch);
+            }
+            else {
+                SPDLOG_LOGGER_INFO(logger, "Dev discovered id: {}, type: {}, version: {}.{}.{}.", frame.source_id(), frame.data()[0] << 8 | frame.data()[1], version_major, version_minor, version_patch);
+            }
             add_node(frame.source_id(), node_type, version);
 
-            update_dev_after_node_discovered(frame.source_id(), node_type);
-        }
-        else if (frame.type() == H9frame::Type::NODE_TURNED_ON) {
-            uint16_t node_type = frame.data()[0] << 8 | frame.data()[1];
-            uint16_t version_major = frame.data()[2] << 8 | frame.data()[3];
-            uint16_t version_minor = frame.data()[4] << 8 | frame.data()[5];
-            uint16_t version_patch = frame.data()[6] << 8 | frame.data()[7];
-            uint64_t version = version_major;
-            version = version << 16 | version_minor;
-            version = version << 16 | version_patch;
-            SPDLOG_LOGGER_INFO(logger, "Dev turned on id: {}, type: {}, version: {}.{}.{}.", frame.source_id(), frame.data()[0] << 8 | frame.data()[1], version_major, version_minor, version_patch);
-            add_node(frame.source_id(), node_type, version);
-
-            update_dev_after_node_discovered(frame.source_id(), node_type);
+//            update_dev_after_node_discovered(frame.source_id(), node_type);
         }
 
         update_device_last_seen_time(frame.source_id());
@@ -85,40 +77,40 @@ void NodeDevMgr::nodes_dev_update_thread() {
 }
 
 void NodeDevMgr::update_dev_after_node_discovered(std::uint16_t node_id, std::uint16_t node_type) {
-    for (auto it = loaded_inactive_dev.begin(); it != loaded_inactive_dev.end();) {
-        auto dev = *it;
-
-        nodes_map_mtx.lock_shared();
-        bool can_be_activate = true;
-        for (auto id : dev->get_nodes_id()) {
-            if (nodes_map.count(id) == 0) {
-                can_be_activate = false;
-                break;
-            }
-        }
-        nodes_map_mtx.unlock_shared();
-
-        if (can_be_activate) {
-            devs_map_mtx.lock();
-            if (devs_map.count(dev->name) == 0) {
-                SPDLOG_LOGGER_INFO(logger, "Dev '{}' activating...", dev->name);
-                dev->activate();
-                devs_map[dev->name] = dev;
-
-                devs_map_mtx.unlock();
-
-                dev->init();
-            }
-            else {
-                devs_map_mtx.unlock();
-            }
-
-            it = loaded_inactive_dev.erase(it);
-        }
-        else {
-            ++it;
-        }
-    }
+//    for (auto it = loaded_inactive_dev.begin(); it != loaded_inactive_dev.end();) {
+//        auto dev = *it;
+//
+//        nodes_map_mtx.lock_shared();
+//        bool can_be_activate = true;
+//        for (auto id : dev->get_nodes_id()) {
+//            if (nodes_map.count(id) == 0) {
+//                can_be_activate = false;
+//                break;
+//            }
+//        }
+//        nodes_map_mtx.unlock_shared();
+//
+//        if (can_be_activate) {
+//            devs_map_mtx.lock();
+//            if (devs_map.count(dev->name) == 0) {
+//                SPDLOG_LOGGER_INFO(logger, "Dev '{}' activating...", dev->name);
+//                dev->activate();
+//                devs_map[dev->name] = dev;
+//
+//                devs_map_mtx.unlock();
+//
+//                dev->init();
+//            }
+//            else {
+//                devs_map_mtx.unlock();
+//            }
+//
+//            it = loaded_inactive_dev.erase(it);
+//        }
+//        else {
+//            ++it;
+//        }
+//    }
 }
 
 Node* NodeDevMgr::build_node(std::uint16_t node_id, std::uint16_t node_type, std::uint64_t node_version) noexcept {
@@ -133,10 +125,18 @@ void NodeDevMgr::add_node(std::uint16_t node_id, std::uint16_t node_type, std::u
             uint16_t major = static_cast<std::uint16_t>(node_version >> 32);
             uint16_t minor = static_cast<std::uint16_t>(node_version >> 16);
             uint16_t patch = static_cast<std::uint16_t>(node_version);
-            SPDLOG_LOGGER_WARN(logger, "Node {} (type: {}, version: {}.{}.{}) exist, override by node type: {} version: {}.{}.{}.",
-                               node_id, nodes_map[node_id]->device_type(), nodes_map[node_id]->device_version_major(),
-                               nodes_map[node_id]->device_version_minor(), nodes_map[node_id]->device_version_patch(),
-                               node_type, major, minor, patch);
+            if (nodes_map[node_id]->device_type() != node_type) {
+                SPDLOG_LOGGER_ERROR(logger, "Node {} (type: {}, version: {}.{}.{}) exist, override by node type: {}.",
+                                   node_id, nodes_map[node_id]->device_type(), nodes_map[node_id]->device_version_major(),
+                                   nodes_map[node_id]->device_version_minor(), nodes_map[node_id]->device_version_patch(),
+                                   node_type);
+            }
+            else {
+                SPDLOG_LOGGER_WARN(logger, "Node {} (type: {}, version: {}.{}.{}) exist, override by node version: {}.{}.{}.",
+                                   node_id, nodes_map[node_id]->device_type(), nodes_map[node_id]->device_version_major(),
+                                   nodes_map[node_id]->device_version_minor(), nodes_map[node_id]->device_version_patch(),
+                                   major, minor, patch);
+            }
             delete nodes_map[node_id];
             nodes_map[node_id] = build_node(node_id, node_type, node_version);
         }
@@ -191,7 +191,7 @@ void NodeDevMgr::response_timeout_duration(int response_timeout_duration) {
     _response_timeout_duration = response_timeout_duration;
 }
 
-int NodeDevMgr::response_timeout_duration() {
+int NodeDevMgr::response_timeout_duration() const {
     return _response_timeout_duration;
 }
 
@@ -244,7 +244,7 @@ std::vector<Node::RegisterDsc> NodeDevMgr::get_registers_list(std::uint16_t node
         return ret;
     }
     nodes_map_mtx.unlock_shared();
-    return std::vector<Node::RegisterDsc>();
+    return {};
 }
 
 int NodeDevMgr::get_node_info(std::uint16_t node_id, NodeDevMgr::NodeInfo& node_info) {
@@ -266,7 +266,7 @@ int NodeDevMgr::get_node_info(std::uint16_t node_id, NodeDevMgr::NodeInfo& node_
         return ret;
     }
     nodes_map_mtx.unlock_shared();
-    throw DeviceNotExistException();
+    throw NodeNotExistException();
 }
 
 void NodeDevMgr::node_reset(std::uint16_t node_id) {
@@ -283,7 +283,7 @@ void NodeDevMgr::node_reset(std::uint16_t node_id) {
         }
     }
     nodes_map_mtx.unlock_shared();
-    throw DeviceNotExistException();
+    throw NodeNotExistException();
 }
 
 Node::regvalue_t NodeDevMgr::set_register(std::uint16_t node_id, std::uint8_t reg, Node::regvalue_t value) {
@@ -300,7 +300,7 @@ Node::regvalue_t NodeDevMgr::set_register(std::uint16_t node_id, std::uint8_t re
         }
     }
     nodes_map_mtx.unlock_shared();
-    throw DeviceNotExistException();
+    throw NodeNotExistException();
 }
 
 Node::regvalue_t NodeDevMgr::get_register(std::uint16_t node_id, std::uint8_t reg) {
@@ -317,7 +317,7 @@ Node::regvalue_t NodeDevMgr::get_register(std::uint16_t node_id, std::uint8_t re
         }
     }
     nodes_map_mtx.unlock_shared();
-    throw DeviceNotExistException();
+    throw NodeNotExistException();
 }
 
 Node::regvalue_t NodeDevMgr::set_register_bit(std::uint16_t node_id, std::uint8_t reg, std::uint8_t bit_num) {
@@ -334,7 +334,7 @@ Node::regvalue_t NodeDevMgr::set_register_bit(std::uint16_t node_id, std::uint8_
         }
     }
     nodes_map_mtx.unlock_shared();
-    throw DeviceNotExistException();
+    throw NodeNotExistException();
 }
 
 Node::regvalue_t NodeDevMgr::clear_register_bit(std::uint16_t node_id, std::uint8_t reg, std::uint8_t bit_num) {
@@ -351,7 +351,7 @@ Node::regvalue_t NodeDevMgr::clear_register_bit(std::uint16_t node_id, std::uint
         }
     }
     nodes_map_mtx.unlock_shared();
-    throw DeviceNotExistException();
+    throw NodeNotExistException();
 }
 
 Node::regvalue_t NodeDevMgr::toggle_register_bit(std::uint16_t node_id, std::uint8_t reg, std::uint8_t bit_num) {
@@ -368,7 +368,7 @@ Node::regvalue_t NodeDevMgr::toggle_register_bit(std::uint16_t node_id, std::uin
         }
     }
     nodes_map_mtx.unlock_shared();
-    throw DeviceNotExistException();
+    throw NodeNotExistException();
 }
 
 std::uint8_t NodeDevMgr::get_reg_value_from_frame(std::uint16_t node_id, const ExtH9Frame& frame, Node::regvalue_t* value) {
@@ -385,7 +385,7 @@ std::uint8_t NodeDevMgr::get_reg_value_from_frame(std::uint16_t node_id, const E
         }
     }
     nodes_map_mtx.unlock_shared();
-    throw DeviceNotExistException();
+    throw NodeNotExistException();
 }
 
 std::vector<NodeDevMgr::DevDsc> NodeDevMgr::get_devs_list() noexcept {
@@ -401,17 +401,61 @@ std::vector<NodeDevMgr::DevDsc> NodeDevMgr::get_devs_list() noexcept {
     return std::move(ret);
 }
 
-nlohmann::json NodeDevMgr::call_dev_method(const std::string& dev_id, const TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params) {
+nlohmann::json NodeDevMgr::call_dev_method(const std::string& dev_name, const TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params) {
     nlohmann::json r;
     devs_map_mtx.lock_shared();
-    if (devs_map.count(dev_id)) {
+    if (devs_map.count(dev_name)) {
         try {
-            r = devs_map[dev_id]->dev_call(client_thread, id, params);
+            r = devs_map[dev_name]->call_dev_method(client_thread, id, params);
         }
         catch (...) {
             devs_map_mtx.unlock_shared();
             throw;
         }
+    }
+    else {
+        devs_map_mtx.unlock_shared();
+        throw DeviceNotExistException(dev_name);
+    }
+    devs_map_mtx.unlock_shared();
+    return r;
+}
+
+nlohmann::json NodeDevMgr::get_dev_description(const std::string& dev_name, const TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params) {
+    nlohmann::json r;
+    devs_map_mtx.lock_shared();
+    if (devs_map.count(dev_name)) {
+        try {
+            r = devs_map[dev_name]->get_dev_description(client_thread, id, params);
+        }
+        catch (...) {
+            devs_map_mtx.unlock_shared();
+            throw;
+        }
+    }
+    else {
+        devs_map_mtx.unlock_shared();
+        throw DeviceNotExistException(dev_name);
+    }
+    devs_map_mtx.unlock_shared();
+    return r;
+}
+
+nlohmann::json NodeDevMgr::get_dev_state(const std::string& dev_name, const TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params) {
+    nlohmann::json r;
+    devs_map_mtx.lock_shared();
+    if (devs_map.count(dev_name)) {
+        try {
+            r = devs_map[dev_name]->get_dev_state(params.param_map);
+        }
+        catch (...) {
+            devs_map_mtx.unlock_shared();
+            throw;
+        }
+    }
+    else {
+        devs_map_mtx.unlock_shared();
+        throw DeviceNotExistException(dev_name);
     }
     devs_map_mtx.unlock_shared();
     return r;
@@ -438,6 +482,19 @@ void NodeDevMgr::detach_dev_state_observer(const std::string& dev_id, DevStatusO
 }
 
 void NodeDevMgr::add_dev(Dev* dev) {
-    loaded_inactive_dev.push_back(dev);
-    SPDLOG_LOGGER_INFO(logger, "Added dev: '{}', type: {}", dev->name, dev->type);
+    //loaded_inactive_dev.push_back(dev);
+    devs_map_mtx.lock();
+    if (devs_map.count(dev->name) == 0) {
+        SPDLOG_LOGGER_INFO(logger, "Added dev: '{}', type: {}", dev->name, dev->type);
+        devs_map[dev->name] = dev;
+
+        devs_map_mtx.unlock();
+
+        dev->init();
+    }
+    else {
+        SPDLOG_LOGGER_ERROR(logger, "Can not add dev: '{}', type: {} - dev exist", dev->name, dev->type);
+        delete dev;
+        devs_map_mtx.unlock();
+    }
 }

@@ -19,7 +19,25 @@ class TCPClientThread;
 
 class API {
   public:
-    constexpr static int NODE_DOES_NOT_EXIST = -1;
+    constexpr static int EXECUTION_TIMEOUT = -10;
+    constexpr static int NODE_IS_NOT_EXIST = -11;
+    constexpr static int DEV_IS_NOT_EXIST = -12;
+    constexpr static int MALFORMED_FRAME = -13;
+    constexpr static int FRAME_SIZE_MISMATCH = -14;
+    constexpr static int REGISTER_IS_NOT_EXIST = -15;
+    constexpr static int REGISTER_IS_NOT_WRITABLE = -16;
+    constexpr static int REGISTER_IS_NOT_READABLE = -17;
+    constexpr static int UNSUPPORTED_REGISTER_DATA_CONVERSION = -18;
+
+    /*
+      -1000 - -1255 - reserved for error origin directly from node (CAN error frame)
+    */
+
+    //"Internal error", -32603
+    //"Invalid params", -32602
+    //"Method not found", -32601
+    //"Invalid request", -32600
+    //"Parse error", -32700
   private:
     using api_method = nlohmann::json (API::*)(TCPClientThread* client_thread, const jsonrpcpp::Id&, const jsonrpcpp::Parameter&);
 
@@ -47,7 +65,9 @@ class API {
     nlohmann::json clear_register_bit(TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params);
     nlohmann::json toggle_register_bit(TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params);
     nlohmann::json get_devs_list(TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params);
-    nlohmann::json dev_call(TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params);
+    nlohmann::json get_dev_description(TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params);
+    nlohmann::json get_dev_status(TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params);
+    nlohmann::json dev_method_call(TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params);
   public:
     API(Bus* bus, NodeDevMgr* dev_mgr);
     void set_tcp_server(TCPServer* tcp_server);
