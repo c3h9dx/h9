@@ -1,0 +1,3 @@
+[submodule "h9can"]
+	path = h9can
+	url = https://github.com/h9d/h9can.git

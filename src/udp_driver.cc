@@ -135,7 +135,7 @@ int UDPDriver::send_data(std::shared_ptr<BusFrame> busframe) {
 
     can_msg.can_id = htonl(can_msg.can_id);
 
-    //can_msg.can_id |= CAN_EFF_FLAG;
+    can_msg.can_id |= 0x80000000U; //CAN_EFF_FLAG;
 
     can_msg.can_dlc = busframe->dlc();
     for (int i = 0; i < 8; i++) {

@@ -32,6 +32,7 @@ configure_file(config_gen.h.in config_gen.h)
 add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
 
 set(H9D_SRC h9d.cc config.h
+        types.h
         h9d_configurator.cc h9d_configurator.h
         h9frame.cc h9frame.h
         ext_h9frame.cc ext_h9frame.h
@@ -54,7 +55,7 @@ set(H9D_SRC h9d.cc config.h
         metrics_collector.cc metrics_collector.h
         raw_node.cc raw_node.h
         send_frame_result.h
-        node_dev_mgr.cc node_dev_mgr.h
+        node_mgr.cc node_mgr.h
         node.cc node.h
         node_desc_loader.cc node_desc_loader.h
         virtual_driver.cc virtual_driver.h
@@ -67,7 +68,11 @@ set(H9D_SRC h9d.cc config.h
         dev_status_observer.cc dev_status_observer.h
         fmt_helpers.cc fmt_helpers.h
         dev_loader.cc dev_loader.h
-        libconfuse_helper.cc libconfuse_helper.h udp_driver.cc udp_driver.h)
+        libconfuse_helper.cc libconfuse_helper.h udp_driver.cc udp_driver.h
+        thunder_switch_dev.cc
+        thunder_switch_dev.h
+        dev_workers.cc
+        dev_workers.h)
 
 set(CLIENT_COMMON_SRC config.h
         h9frame.cc h9frame.h

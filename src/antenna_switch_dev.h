@@ -28,11 +28,13 @@ class AntennaSwitchDev: public Dev {
     std::uint8_t number_of_antenna;
     std::string antenna_name[MAX_ANTENNAS];
   public:
-    AntennaSwitchDev(std::string name, NodeDevMgr*node_mgr, std::uint16_t switch_node_id);
-    AntennaSwitchDev(std::string name, NodeDevMgr*node_mgr, std::uint16_t switch_node_id, std::uint16_t controller_node_id);
-    void update_dev_state(std::uint16_t node_id, const ExtH9Frame& frame) override;
+    AntennaSwitchDev(std::string name, NodeMgr*node_mgr, std::uint16_t switch_node_id);
+    AntennaSwitchDev(std::string name, NodeMgr*node_mgr, std::uint16_t switch_node_id, std::uint16_t controller_node_id);
+
     void init() override;
-    nlohmann::json dev_call(const TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params) override;
+    void update_dev_state(std::uint16_t node_id, const ExtH9Frame& frame) override;
+    nlohmann::json get_dev_state(const std::map<std::string, nlohmann::json>& param_map) override;
 
     void select_antenna(int antenna_number);
+    nlohmann::json select_antenna_method(const std::map<std::string, nlohmann::json>& param_map);
 };

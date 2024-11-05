@@ -3,13 +3,103 @@
  *
  * Created by SQ8KFH on 2020-11-28.
  *
- * Copyright (C) 2020-2023 Kamil Palkowski. All rights reserved.
+ * Copyright (C) 2020-2024 Kamil Palkowski. All rights reserved.
  */
 
 #include "node_desc_loader.h"
 
+#include <libgen.h>
+#include <dirent.h>
+#include <sys/stat.h>
+
 #include "spdlog/spdlog.h"
 #include "libconfuse_helper.h"
+
+
+static int cfg_include_wrapper(cfg_t *cfg, cfg_opt_t *opt, int argc, const char **argv) {
+    if (!cfg || !argv) {
+        errno = EINVAL;
+        return CFG_FAIL;
+    }
+
+    if (argv[0][0] == '/') {
+        return cfg_include(cfg, opt, argc, argv);
+    }
+
+
+    size_t len = strlen(cfg->filename) + strlen(argv[0]) + 2;
+    char *path = (char*)malloc(len);
+    if (!path)
+        return CFG_FAIL;
+
+//    char *dir_name = dirname(cfg->filename);
+
+    char *tmp = strrchr(cfg->filename, '/');
+
+    if (tmp) {
+        size_t l = tmp - cfg->filename;
+        stpncpy(path, cfg->filename, l);
+        path[l] = '\0';
+    }
+    else {
+        path[0] = '.';
+        path[1] = '\0';
+    }
+
+    strcat(path, "/");
+    strcat(path, argv[0]);
+//    size_t len = strlen(dir_name) + strlen(argv[0]) + 2;
+//    char *path = (char*)malloc(len);
+//    if (!path)
+//        return CFG_FAIL;
+
+//    snprintf(path, len, "%s/%s", dir_name, argv[0]);
+//    free(dir_name);
+
+    int ret = CFG_FAIL;
+
+    struct stat st;
+    int err = stat((const char *)path, &st);
+    if ((!err) && S_ISREG(st.st_mode)) {
+        argv[0] = path;
+        SPDLOG_INFO("Loading nodes description subfile: {}", path);
+        ret = cfg_include(cfg, opt, argc, argv);
+    }
+    else if ((!err) && S_ISDIR(st.st_mode)) {
+        DIR *d = opendir(path);
+        if (d) {
+            struct dirent *dir;
+            ret = CFG_SUCCESS;
+            while ((dir = readdir(d)) != NULL) {
+                if (dir->d_type == DT_REG) {
+                    char *tmp = strrchr(dir->d_name, '.');
+                    if (tmp == NULL || strcmp(tmp, ".conf"))
+                        continue;
+
+                    size_t len = strlen(path) + strlen(dir->d_name) + 2;
+                    char *file = (char*)malloc(len);
+                    if (!file) {
+                        ret = CFG_FAIL;
+                        break;
+                    }
+
+                    snprintf(file, len, "%s/%s", path, dir->d_name);
+
+                    argv[0] = file;
+                    SPDLOG_INFO("Loading nodes description subfile: {}", file);
+                    ret =  cfg_include(cfg, opt, argc, argv);
+                    free(file);
+
+                    if (ret != CFG_SUCCESS) break;
+                }
+            }
+            closedir(d);
+        }
+    }
+
+    free(path);
+    return ret;
+}
 
 NodeDescLoader::NodeDescLoader():
     cfg(nullptr) {
@@ -22,6 +112,8 @@ NodeDescLoader::~NodeDescLoader() {
 }
 
 void NodeDescLoader::load_file(const std::string& nodes_desc_file) {
+    _nodes_desc_file = nodes_desc_file;
+
     cfg_opt_t cfg_register_sec[] = {
         CFG_STR("name", nullptr, CFGF_NONE),
         CFG_STR("type", nullptr, CFGF_NONE),
@@ -41,6 +133,7 @@ void NodeDescLoader::load_file(const std::string& nodes_desc_file) {
 
     cfg_opt_t cfg_opts[] = {
         CFG_SEC("node_type", cfg_type_sec, CFGF_MULTI | CFGF_TITLE | CFGF_NO_TITLE_DUPES),
+        CFG_FUNC("include", &cfg_include_wrapper),
         CFG_END()};
 
     cfg = cfg_init(cfg_opts, CFGF_NONE);
@@ -49,6 +142,7 @@ void NodeDescLoader::load_file(const std::string& nodes_desc_file) {
     cfg_set_validate_func(cfg, "node_type|register|size", confuse_helpers::validate_node_register_size);
     cfg_set_validate_func(cfg, "node_type", confuse_helpers::validate_node_type_sec);
     cfg_set_validate_func(cfg, "node_type|register",confuse_helpers::validate_node_register_number_sec);
+
     int ret = cfg_parse(cfg, nodes_desc_file.c_str());
 
     if (ret == CFG_FILE_ERROR) {
@@ -92,6 +186,16 @@ void NodeDescLoader::load_file(const std::string& nodes_desc_file) {
             reg.description = std::string(cfg_getstr(register_c, "description"));
         }
     }
+}
+
+void NodeDescLoader::reload() {
+    if (cfg) {
+        cfg_free(cfg);
+    }
+
+    types.clear();
+
+    load_file(_nodes_desc_file);
 }
 
 std::string NodeDescLoader::get_node_name_by_type(std::uint16_t type) {

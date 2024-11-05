@@ -34,10 +34,13 @@
 %token T_CLEAR_CACHE    "clear_cache"
 
 %token T_H9D            "h9d"
-%token T_DISCOVER       "discover"
 %token T_TCPCLIENT      "tcpclient"
-%token T_LIST           "list"
+%token T_NODES          "nodes"
+%token T_DEVS           "devs"
 
+%token T_DISCOVER       "discover"
+%token T_LIST           "list"
+%token T_RELOAD_DESCRIPTION          "reload_description"
 %token T_NODE           "node"
 %token T_RESET          "reset"
 %token T_INFO           "info"
@@ -47,6 +50,10 @@
 %token T_SETBIT         "setbit"
 %token T_CLEARBIT       "clearbit"
 %token T_TOGGLEBIT      "togglebit"
+
+%token T_DEV            "dev"
+%token T_STATUS         "status"
+%token T_METHOD         "method"
 
 %token MINUS            "-"
 %token PLUS             "+"
@@ -66,11 +73,11 @@
 
 %nterm <int> cli_command
 
-%nterm <nlohmann::json> node_exp node_reg_exp
-%nterm <jsonrpcpp::Request> h9d_command node_command node_reg_command
+%nterm <nlohmann::json> node_exp node_reg_exp dev_exp
+%nterm <jsonrpcpp::Request> h9d_command nodes_command devs_command node_command node_reg_command dev_command
 
 %printer { yyo << $$.c_str(); } STRING QUOTED_STRING
-%printer { yyo << $$.dump().c_str(); } node_exp
+%printer { yyo << $$.dump().c_str(); } node_exp dev_exp
 
 //%destructor { printf ("Discarding node_exp symbol.\n"); delete $$; } node_exp
 //%destructor { printf ("Discarding node_reg_exp symbol.\n"); delete $$; } node_reg_exp
@@ -103,20 +110,47 @@ unit:
                                             cli_drv.set_jsonrpc_request($1);
                                             cli_drv.set_funnction_to_call(CLIParsingDriver::JSONRPC);
                                         }
+    | dev_command                       {
+                                            cli_drv.set_jsonrpc_request($1);
+                                            cli_drv.set_funnction_to_call(CLIParsingDriver::JSONRPC);
+                                        }
     | num_exp                           { printf("%d\n", $1); }
 
 cli_command:
     "cli" "clear_cache"                 { $$ = CLIParsingDriver::CLEAR_CACHE; }
 
 h9d_command:
-    "h9d" "discover"                    {
-                                            jsonrpcpp::Id id(0);
-                                            $$ = jsonrpcpp::Request(id, "discover_nodes");
-                                        }
-    | "h9d" "tcpclient" "list"          {
+    "h9d" "tcpclient" "list"            {
                                             jsonrpcpp::Id id(0);
                                             $$ = jsonrpcpp::Request(id, "get_tcp_clients");
                                         }
+    | "h9d" "nodes" nodes_command       {
+                                            $$ = $3;
+                                        }
+    | "h9d" "devs" devs_command         {
+                                            $$ = $3;
+                                        }
+
+nodes_command:
+     "discover"                         {
+                                            jsonrpcpp::Id id(0);
+                                            $$ = jsonrpcpp::Request(id, "discover_nodes");
+                                        }
+     | "reload_description"             {
+                                            jsonrpcpp::Id id(0);
+                                            $$ = jsonrpcpp::Request(id, "reload_nodes_description");
+                                        }
+     | "list"                           {
+                                            jsonrpcpp::Id id(0);
+                                            $$ = jsonrpcpp::Request(id, "get_nodes_list");
+                                        }
+
+devs_command:
+     "list"                             {
+                                            jsonrpcpp::Id id(0);
+                                            $$ = jsonrpcpp::Request(id, "get_devs_list");
+                                        }
+
 node_exp:
     "node" num_exp			            {
 	                                        cli_drv.set_last_parsed_node_id($2);
@@ -129,7 +163,7 @@ node_exp:
                                         }
 
 node_command:
-    node_exp "reset"      	            {
+    node_exp "reset"         	        {
                                             jsonrpcpp::Id id(0);
                                             $$ = jsonrpcpp::Request(id, "node_reset", $1);
                                         }
@@ -198,6 +232,27 @@ node_reg_command:
                                             jsonrpcpp::Id id(0);
                                             $1["value"] = $3;
                                             $$ = jsonrpcpp::Request(id, "set_register_value", $1);
+                                        }
+
+dev_exp:
+    "dev" str_exp                       {
+                                            cli_drv.set_last_parsed_dev_name($2);
+                                            $$ = nlohmann::json({{"dev_name", $2}});
+                                        }
+
+dev_command:
+    dev_exp "info"      	            {
+                                            jsonrpcpp::Id id(0);
+                                            $$ = jsonrpcpp::Request(id, "get_dev_description", $1);
+                                        }
+    | dev_exp "status"      	        {
+                                            jsonrpcpp::Id id(0);
+                                            $$ = jsonrpcpp::Request(id, "get_dev_status", $1);
+                                        }
+    | dev_exp "method" STRING           {
+                                            jsonrpcpp::Id id(0);
+                                            $1["method"] = $3;
+                                            $$ = jsonrpcpp::Request(id, "dev_method_call", $1);
                                         }
 
 str_exp:

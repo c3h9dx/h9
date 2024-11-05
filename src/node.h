@@ -3,7 +3,7 @@
  *
  * Created by SQ8KFH on 2020-11-23.
  *
- * Copyright (C) 2020-2023 Kamil Palkowski. All rights reserved.
+ * Copyright (C) 2020-2024 Kamil Palkowski. All rights reserved.
  */
 
 #ifndef H9_NODE_H
@@ -17,12 +17,15 @@
 #include <set>
 #include <variant>
 #include <vector>
+#include <list>
 
+#include "types.h"
 #include "node_desc_loader.h"
 #include "raw_node.h"
 
-class NodeDevMgr;
+class NodeMgr;
 class TCPClientThread;
+class Dev;
 
 class Node: protected RawNode {
   public:
@@ -33,34 +36,50 @@ class Node: protected RawNode {
     std::shared_ptr<spdlog::logger> logger;
     static NodeDescLoader nodedescloader;
 
-    const std::uint16_t _device_type;
-    const std::uint64_t _device_version;
-    std::string _device_name;
-    std::string _device_description;
-    const std::time_t _created_time;
-    std::time_t _last_seen_time;
+    std::uint16_t _node_type;
+    std::uint64_t _node_version;
+    char _hardware_revision;
+    std::uint8_t _reset_reason;
+    std::string _node_name;
+    std::string _node_description;
+    const timestamp_t _created_time;
+    timestamp_t _last_seen_time;
 
     std::map<std::uint8_t, RegisterDsc> register_map;
 
-    friend class NodeDevMgr;
-    void update_node_last_seen_time() noexcept;
+    friend class NodeMgr;
+    void update_node_last_seen_time(timestamp_t timestamp) noexcept;
 
-  protected:
-    ////    void notify_event_observer(std::string event_name, GenericMsg msg) noexcept;
-    Node(NodeDevMgr* node_mgr, Bus* bus, std::uint16_t node_id, std::uint16_t node_type, std::uint64_t node_version) noexcept;
+    std::list<Dev*> dependent_devices;
+    std::mutex dependent_devices_mtx;
+
+    bool _init;
   public:
+    ////    void notify_event_observer(std::string event_name, GenericMsg msg) noexcept;
+    Node(NodeMgr* node_mgr, Bus* bus, std::uint16_t node_id) noexcept;
+    void init(std::uint16_t node_type, std::uint32_t node_version, char hardware_revision, std::uint8_t reset_reason);
+    bool is_init() { return _init; };
+
+    void load_description();
+
+    void add_dependent_devices(Dev *dev);
+    void del_dependent_devices(Dev *dev);
+
+    void on_frame_recv(const ExtH9Frame& frame);
+
     ~Node();
     std::vector<RegisterDsc> get_registers_list() noexcept;
 
-    [[nodiscard]] std::uint16_t device_type() const noexcept;
-    [[nodiscard]] std::uint64_t device_version() const noexcept;
-    [[nodiscard]] std::uint16_t device_version_major() const noexcept;
-    [[nodiscard]] std::uint16_t device_version_minor() const noexcept;
-    [[nodiscard]] std::uint16_t device_version_patch() const noexcept;
-    [[nodiscard]] std::string device_name() const noexcept;
-    [[nodiscard]] std::time_t device_created_time() const noexcept;
-    [[nodiscard]] std::time_t device_last_seen_time() const noexcept;
-    [[nodiscard]] std::string device_description() const noexcept;
+    [[nodiscard]] std::uint16_t node_type() const noexcept;
+    [[nodiscard]] std::uint64_t node_version() const noexcept;
+    [[nodiscard]] std::uint16_t node_version_major() const noexcept;
+    [[nodiscard]] std::uint16_t node_version_minor() const noexcept;
+    [[nodiscard]] char node_hardware_revision() const noexcept;
+    [[nodiscard]] std::uint8_t node_reset_reason() const noexcept;
+    [[nodiscard]] std::string node_name() const noexcept;
+    [[nodiscard]] timestamp_t node_created_time() const noexcept;
+    [[nodiscard]] timestamp_t node_last_seen_time() const noexcept;
+    [[nodiscard]] std::string node_description() const noexcept;
 
     void node_reset();
     regvalue_t set_register(std::uint8_t reg, regvalue_t value);
@@ -69,7 +88,7 @@ class Node: protected RawNode {
     regvalue_t clear_register_bit(std::uint8_t reg, std::uint8_t bit_num);
     regvalue_t toggle_register_bit(std::uint8_t reg, std::uint8_t bit_num);
 
-    /// Read value from from
+    /// Read value from frame
     /// @param[in] frame
     /// @param[out] value
     /// @return Reg number or 0 when it is not reg value frame

@@ -3,7 +3,7 @@
  *
  * Created by SQ8KFH on 2020-11-28.
  *
- * Copyright (C) 2020-2023 Kamil Palkowski. All rights reserved.
+ * Copyright (C) 2020-2024 Kamil Palkowski. All rights reserved.
  */
 
 #pragma once
@@ -37,11 +37,12 @@ class NodeDescLoader {
   private:
     cfg_t* cfg;
     std::map<std::uint16_t, NodeDesc> types;
-
+    std::string _nodes_desc_file;
   public:
     NodeDescLoader();
     ~NodeDescLoader();
     void load_file(const std::string& nodes_desc_file);
+    void reload();
 
     std::string get_node_name_by_type(std::uint16_t type);
     std::string get_node_description_by_type(std::uint16_t type);

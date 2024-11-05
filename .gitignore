@@ -8,6 +8,7 @@
 Testing
 
 # CMake
+build/
 cmake-build-debug/
 cmake-build-debug-coverage/
 cmake-build-debug-h9/

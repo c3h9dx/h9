@@ -29,9 +29,12 @@ cli                     return cli_drv.tee_token(yy::parser::make_T_CLI());
 clear_cache             return cli_drv.tee_token(yy::parser::make_T_CLEAR_CACHE());
 
 h9d                     return cli_drv.tee_token(yy::parser::make_T_H9D());
-discover                return cli_drv.tee_token(yy::parser::make_T_DISCOVER());
 tcpclient               return cli_drv.tee_token(yy::parser::make_T_TCPCLIENT());
+nodes                   return cli_drv.tee_token(yy::parser::make_T_NODES());
+devs                    return cli_drv.tee_token(yy::parser::make_T_DEVS());
+discover                return cli_drv.tee_token(yy::parser::make_T_DISCOVER());
 list                    return cli_drv.tee_token(yy::parser::make_T_LIST());
+reload_description      return cli_drv.tee_token(yy::parser::make_T_RELOAD_DESCRIPTION());
 node                    return cli_drv.tee_token(yy::parser::make_T_NODE());
 
 reset                   return cli_drv.tee_token(yy::parser::make_T_RESET());
@@ -43,6 +46,10 @@ get                     return cli_drv.tee_token(yy::parser::make_T_GET());
 setbit                  return cli_drv.tee_token(yy::parser::make_T_SETBIT());
 clearbit                return cli_drv.tee_token(yy::parser::make_T_CLEARBIT());
 togglebit               return cli_drv.tee_token(yy::parser::make_T_TOGGLEBIT());
+
+dev                     return cli_drv.tee_token(yy::parser::make_T_DEV());
+status                  return cli_drv.tee_token(yy::parser::make_T_STATUS());
+method                  return cli_drv.tee_token(yy::parser::make_T_METHOD());
 
 [0-9]+                  {
                             //printf("!- number token mach\n");
@@ -63,7 +70,7 @@ b[01]{1,32}             {
                             return cli_drv.tee_token(yy::parser::make_NUMBER(tmp));
                         }
 
-([0-9A-Za-z]|(\\[ ]))+  {
+([0-9A-Za-z_]|(\\[ ]))+ {
                             return cli_drv.tee_token(yy::parser::make_STRING(cli_drv.unescape(std::string(yytext))));
                         }
 

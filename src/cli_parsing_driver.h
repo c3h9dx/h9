@@ -44,6 +44,7 @@ class CLIParsingDriver {
     yy::parser::symbol_kind::symbol_kind_type last_token;
     std::uint16_t last_node_id;
     std::uint8_t last_reg_number;
+    std::string last_dev;
 
     int _fun;
     jsonrpcpp::Request _req;
@@ -70,10 +71,13 @@ class CLIParsingDriver {
     char* cli_node_completion(const char* text, int state);
     char* cli_register_completion(const char* text, int state);
     char* cli_bit_completion(const char* text, int state);
+    char* cli_dev_completion(const char* text, int state);
+    char* cli_dev_method_completion(const char* text, int state);
 
     yy::parser::symbol_type tee_token(yy::parser::symbol_type symbol);
     void set_last_parsed_node_id(std::uint16_t id);
     void set_last_parsed_reg_number(std::uint16_t num);
+    void set_last_parsed_dev_name(std::string name);
 
     int parse(const char* str);
     void set_funnction_to_call(int fun);
