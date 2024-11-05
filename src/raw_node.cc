@@ -3,7 +3,7 @@
  *
  * Created by SQ8KFH on 2020-11-08.
  *
- * Copyright (C) 2020-2023 Kamil Palkowski. All rights reserved.
+ * Copyright (C) 2020-2024 Kamil Palkowski. All rights reserved.
  */
 
 #include "raw_node.h"
@@ -11,9 +11,10 @@
 #include <arpa/inet.h>
 #include <fmt/core.h>
 #include <spdlog/spdlog.h>
+#include <h9def.h>
 
 #include "bus.h"
-#include "node_dev_mgr.h"
+#include "node_mgr.h"
 
 void RawNode::on_frame_recv(const ExtH9Frame& frame) {
     frame_promise_set_mtx.lock();
@@ -26,9 +27,6 @@ void RawNode::on_frame_recv(const ExtH9Frame& frame) {
         }
     }
     frame_promise_set_mtx.unlock();
-}
-
-void RawNode::on_frame_send(const ExtH9Frame& frame) {
 }
 
 RawNode::FramePromise* RawNode::create_frame_promise(H9FrameComparator comparator) {
@@ -47,8 +45,7 @@ void RawNode::destroy_frame_promise(FramePromise* frame_promise) {
     frame_promise_set_mtx.unlock();
 }
 
-RawNode::RawNode(NodeDevMgr* node_mgr, Bus* bus, std::uint16_t node_id) noexcept:
-    FrameObserver(node_mgr, H9FrameComparator(node_id)),
+RawNode::RawNode(NodeMgr* node_mgr, Bus* bus, std::uint16_t node_id) noexcept:
     node_mgr(node_mgr),
     bus(bus),
     _node_id(node_id) {
@@ -96,7 +93,7 @@ ssize_t RawNode::reset(const std::string& origin) {
 
 int32_t RawNode::get_node_type(const std::string& origin) noexcept {
     std::uint16_t buf;
-    ssize_t ret = get_reg(origin, REG_NODE_TYPE, sizeof(buf), reinterpret_cast<std::uint8_t*>(&buf));
+    ssize_t ret = get_reg(origin, NODE_TYPE_STD_REGISTER, sizeof(buf), reinterpret_cast<std::uint8_t*>(&buf));
     if (ret == 2) {
         return ntohs(buf);
     }
@@ -108,7 +105,7 @@ int32_t RawNode::get_node_type(const std::string& origin) noexcept {
 
 int64_t RawNode::get_node_version(const std::string& origin, std::uint16_t* major, std::uint16_t* minor, std::uint16_t* patch) noexcept {
     std::uint16_t buf[3];
-    ssize_t ret = get_reg(origin, REG_NODE_VERSION, sizeof(buf), reinterpret_cast<std::uint8_t*>(&buf));
+    ssize_t ret = get_reg(origin, NODE_VERSION_STD_REGISTER, sizeof(buf), reinterpret_cast<std::uint8_t*>(&buf));
     if (ret == 6) {
         std::uint16_t tmp = ntohs(buf[0]);
         ret = tmp;
@@ -133,7 +130,7 @@ int64_t RawNode::get_node_version(const std::string& origin, std::uint16_t* majo
 
 int32_t RawNode::get_mcu_type(const std::string& origin) noexcept {
     std::uint16_t buf;
-    ssize_t ret = get_reg(origin, REG_NODE_MCU_TYPE, sizeof(buf), reinterpret_cast<std::uint8_t*>(&buf));
+    ssize_t ret = get_reg(origin, NODE_MCU_TYPE_STD_REGISTER, sizeof(buf), reinterpret_cast<std::uint8_t*>(&buf));
     if (ret == 2) {
         return ntohs(buf);
     }

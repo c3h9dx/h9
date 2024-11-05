@@ -8,9 +8,14 @@
 
 #include "ext_h9frame.h"
 
+ExtH9Frame::ExtH9Frame():
+    _creation_timestamp(timestamp_t::clock::now()) {
+}
+
 ExtH9Frame::ExtH9Frame(const H9frame& frame, const std::string& origin):
     _frame(frame),
-    _origin(origin) {
+    _origin(origin),
+    _creation_timestamp(timestamp_t::clock::now()) {
     valid = (VALID_PRIORITY | VALID_TYPE | VALID_SEQNUM | VALID_DESTINATION_ID | VALID_DATA);
     if (origin != "")
         valid |= VALID_ORIGIN;
@@ -24,7 +29,8 @@ ExtH9Frame::ExtH9Frame(const std::string& origin, H9frame::Type type, std::uint1
     ExtH9Frame(origin, H9frame::Priority::LOW, type, dst, dlc, data) {
 }
 
-ExtH9Frame::ExtH9Frame(const std::string& origin, H9frame::Priority priority, H9frame::Type type, std::uint16_t dst, std::uint8_t dlc, const std::vector<std::uint8_t>& data) {
+ExtH9Frame::ExtH9Frame(const std::string& origin, H9frame::Priority priority, H9frame::Type type, std::uint16_t dst, std::uint8_t dlc, const std::vector<std::uint8_t>& data):
+    _creation_timestamp(timestamp_t::clock::now()) {
     valid = 0;
     this->origin(origin);
     this->priority(priority);

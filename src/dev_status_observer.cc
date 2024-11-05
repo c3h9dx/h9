@@ -5,10 +5,10 @@
 
 #include "dev_status_observer.h"
 
-#include "node_dev_mgr.h"
+#include "node_mgr.h"
 #include "tcpclientthread.h"
 
-DevStatusObserver::DevStatusObserver(TCPClientThread* tcp_client_thread, NodeDevMgr* mgr):
+DevStatusObserver::DevStatusObserver(TCPClientThread* tcp_client_thread, NodeMgr* mgr):
     client(tcp_client_thread),
     mgr(mgr) {
     mgr->attach_dev_state_observer("*", this);

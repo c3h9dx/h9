@@ -9,22 +9,15 @@
 
 #include "dev_status_observer.h"
 
-Dev::Dev(std::string type, std::string name, NodeDevMgr* node_mgr, std::vector<std::uint16_t> nodes):
+Dev::Dev(std::string type, std::string name, NodeMgr* node_mgr, std::vector<std::uint16_t> nodes):
     type(std::move(type)),
     name(std::move(name)),
     node_mgr(node_mgr),
     dependent_on_nodes(std::move(nodes)) {
-
-    for (auto node : dependent_on_nodes) {
-        node_mgr->attach_node_state_observer(node, this);
-    }
 }
 
 Dev::~Dev() {
     SPDLOG_TRACE("~Dev() {}", fmt::ptr(this));
-    for (auto node : dependent_on_nodes) {
-        node_mgr->detach_node_state_observer(node, this);
-    }
 }
 
 void Dev::emit_dev_state(const nlohmann::json& dev_status) {

@@ -16,7 +16,7 @@
 #include "dev_node_exception.h"
 #include "dev_status_observer.h"
 #include "h9d_configurator.h"
-#include "node_dev_mgr.h"
+#include "node_mgr.h"
 #include "tcpclientthread.h"
 #include "tcpserver.h"
 
@@ -156,6 +156,11 @@ nlohmann::json API::authenticate(TCPClientThread* client_thread, const jsonrpcpp
     }
 }
 
+nlohmann::json API::reload_nodes_description(TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params) {
+    node_dev_mgr->reload_nodes_description();
+    return true;
+}
+
 nlohmann::json API::get_nodes_list(TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params) {
     nlohmann::json r = nlohmann::json::array();
     for (auto& d : node_dev_mgr->get_nodes_list()) {
@@ -179,22 +184,29 @@ nlohmann::json API::get_node_info(TCPClientThread* client_thread, const jsonrpcp
         SPDLOG_DEBUG("Dump '{}' calling params: {}.", __FUNCTION__, params.to_json().dump());
         throw jsonrpcpp::InvalidParamsException(e.what(), id);
     }
-    NodeDevMgr::NodeInfo device_info;
+    NodeMgr::NodeInfo device_info;
     if (node_dev_mgr->get_node_info(node_id, device_info) < 0) {
         throw jsonrpcpp::RequestException(jsonrpcpp::Error("Node " + std::to_string(node_id) + "does not exist.", NODE_IS_NOT_EXIST), id);
     }
 
+    timestamp_t::clock::to_time_t(device_info.created_time);
+//    timestamp_t::
+//    device_info.created_time.
+
     char ct[std::size("yyyy-mm-ddThh:mm:ssZ")];
     char lst[std::size("yyyy-mm-ddThh:mm:ssZ")];
-    std::strftime(std::data(ct), std::size(ct), "%FT%TZ", std::gmtime(&device_info.created_time));
-    std::strftime(std::data(lst), std::size(lst), "%FT%TZ", std::gmtime(&device_info.last_seen_time));
+    auto created_time = timestamp_t::clock::to_time_t(device_info.created_time);
+    std::strftime(std::data(ct), std::size(ct), "%FT%TZ", std::gmtime(&created_time));
+    auto last_seen_time = timestamp_t::clock::to_time_t(device_info.last_seen_time);
+    std::strftime(std::data(lst), std::size(lst), "%FT%TZ", std::gmtime(&last_seen_time));
 
     nlohmann::json r = nlohmann::json({
         {"id", device_info.id},
         {"type", device_info.type},
         {"version_major", device_info.version_major},
         {"version_minor", device_info.version_minor},
-        {"version_patch", device_info.version_patch},
+        {"hardware_revision", device_info.hardware_revision},
+        {"reset_reason", device_info.reset_reason},
         {"name", device_info.name},
         {"created_time", ct},
         {"last_seen_time", lst},
@@ -579,7 +591,7 @@ nlohmann::json API::dev_method_call(TCPClientThread* client_thread, const jsonrp
     return std::move(r);
 }
 
-API::API(Bus* bus, NodeDevMgr* dev_mgr):
+API::API(Bus* bus, NodeMgr* dev_mgr):
     bus(bus),
     node_dev_mgr(dev_mgr) {
     api_methods["get_version"] = &API::get_version;
@@ -589,6 +601,7 @@ API::API(Bus* bus, NodeDevMgr* dev_mgr):
     api_methods["send_frame"] = &API::send_frame;
     api_methods["get_stats"] = &API::get_stats;
     api_methods["authenticate"] = &API::authenticate;
+    api_methods["reload_nodes_description"] = &API::reload_nodes_description;
     api_methods["get_nodes_list"] = &API::get_nodes_list;
     api_methods["get_node_info"] = &API::get_node_info;
     api_methods["discover_nodes"] = &API::discover_nodes;

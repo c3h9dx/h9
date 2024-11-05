@@ -9,7 +9,7 @@
 
 #include "dev_node_exception.h"
 
-AntennaSwitchDev::AntennaSwitchDev(std::string name, NodeDevMgr* node_mgr, std::uint16_t switch_node_id):
+AntennaSwitchDev::AntennaSwitchDev(std::string name, NodeMgr* node_mgr, std::uint16_t switch_node_id):
     Dev("AntennaSwitchDev", std::move(name), node_mgr, {switch_node_id}),
     switch_node_id(switch_node_id),
     controller_node_id(0xffff),
@@ -19,7 +19,7 @@ AntennaSwitchDev::AntennaSwitchDev(std::string name, NodeDevMgr* node_mgr, std::
     add_method("select_antenna", &AntennaSwitchDev::select_antenna_method);
 }
 
-AntennaSwitchDev::AntennaSwitchDev(std::string name, NodeDevMgr* node_mgr, std::uint16_t switch_node_id, std::uint16_t controller_node_id):
+AntennaSwitchDev::AntennaSwitchDev(std::string name, NodeMgr* node_mgr, std::uint16_t switch_node_id, std::uint16_t controller_node_id):
     Dev("AntennaSwitchDev", std::move(name), node_mgr, {switch_node_id, controller_node_id}),
     switch_node_id(switch_node_id),
     controller_node_id(controller_node_id),

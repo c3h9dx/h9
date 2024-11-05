@@ -34,7 +34,7 @@ nodes                   return cli_drv.tee_token(yy::parser::make_T_NODES());
 devs                    return cli_drv.tee_token(yy::parser::make_T_DEVS());
 discover                return cli_drv.tee_token(yy::parser::make_T_DISCOVER());
 list                    return cli_drv.tee_token(yy::parser::make_T_LIST());
-
+reload_description      return cli_drv.tee_token(yy::parser::make_T_RELOAD_DESCRIPTION());
 node                    return cli_drv.tee_token(yy::parser::make_T_NODE());
 
 reset                   return cli_drv.tee_token(yy::parser::make_T_RESET());
@@ -49,6 +49,7 @@ togglebit               return cli_drv.tee_token(yy::parser::make_T_TOGGLEBIT())
 
 dev                     return cli_drv.tee_token(yy::parser::make_T_DEV());
 status                  return cli_drv.tee_token(yy::parser::make_T_STATUS());
+method                  return cli_drv.tee_token(yy::parser::make_T_METHOD());
 
 [0-9]+                  {
                             //printf("!- number token mach\n");

@@ -81,7 +81,8 @@ void CommandExecutor::print_response(const std::string& method, const nlohmann::
         fmt::print("Name:          {}\n", result["name"].get<std::string>());
         fmt::print("ID:            {}\n", result["id"].get<std::uint16_t>());
         fmt::print("Type:          {}\n", result["type"].get<std::uint16_t>());
-        fmt::print("Version:       {}.{}.{}\n", result["version_major"].get<std::uint16_t>(), result["version_minor"].get<std::uint16_t>(), result["version_patch"].get<std::uint16_t>());
+        fmt::print("Version:       {}.{}{}\n", result["version_major"].get<std::uint16_t>(), result["version_minor"].get<std::uint16_t>(), result["hardware_revision"].get<char>());
+        fmt::print("Reset reason:  {}\n", result["reset_reason"].get<std::uint8_t >());
         fmt::print("Created time:  {:%F %T} ({} ago)\n", ct_tm, format_uptime(now - ct_utc_ts));
         fmt::print("Last seen:     {:%F %T} ({} ago)\n", lst_tm, format_uptime(now - lst_utc_ts));
         fmt::print("Description:   {}\n", result["description"].get<std::string>());

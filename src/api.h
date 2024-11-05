@@ -13,7 +13,7 @@
 #include <nlohmann/json.hpp>
 
 class Bus;
-class NodeDevMgr;
+class NodeMgr;
 class TCPServer;
 class TCPClientThread;
 
@@ -42,7 +42,7 @@ class API {
     using api_method = nlohmann::json (API::*)(TCPClientThread* client_thread, const jsonrpcpp::Id&, const jsonrpcpp::Parameter&);
 
     Bus* const bus;
-    NodeDevMgr* const node_dev_mgr;
+    NodeMgr* const node_dev_mgr;
     TCPServer* tcp_server;
 
     std::map<std::string, api_method> api_methods;
@@ -54,6 +54,7 @@ class API {
     nlohmann::json send_frame(TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params);
     nlohmann::json get_stats(TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params);
     nlohmann::json authenticate(TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params);
+    nlohmann::json reload_nodes_description(TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params);
     nlohmann::json get_nodes_list(TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params);
     nlohmann::json get_node_info(TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params);
     nlohmann::json discover_nodes(TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params);
@@ -69,7 +70,7 @@ class API {
     nlohmann::json get_dev_status(TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params);
     nlohmann::json dev_method_call(TCPClientThread* client_thread, const jsonrpcpp::Id& id, const jsonrpcpp::Parameter& params);
   public:
-    API(Bus* bus, NodeDevMgr* dev_mgr);
+    API(Bus* bus, NodeMgr* dev_mgr);
     void set_tcp_server(TCPServer* tcp_server);
     jsonrpcpp::Response call(TCPClientThread* client_thread, const jsonrpcpp::request_ptr& request);
 };

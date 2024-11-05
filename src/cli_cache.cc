@@ -115,6 +115,34 @@ void CliCache::refresh_register(std::uint16_t node_id) {
     }
 }
 
+void CliCache::refresh_dev_method(const std::string& dev_name) {
+    jsonrpcpp::Id id(h9d->get_next_id());
+
+    jsonrpcpp::Request req(id, "get_dev_description", nlohmann::json({{"dev_name", dev_name}}));
+    h9d->send(std::make_shared<jsonrpcpp::Request>(req));
+
+    jsonrpcpp::entity_ptr raw_msg;
+    try {
+        raw_msg = h9d->recv();
+    }
+    catch (std::system_error& e) {
+        SPDLOG_ERROR("Messages receiving error: {}.", e.code().message());
+        exit(EXIT_FAILURE);
+    }
+    catch (std::runtime_error& e) {
+        SPDLOG_ERROR("Messages receiving error: {}.", e.what());
+        exit(EXIT_FAILURE);
+    }
+
+    dev_method_list[dev_name].clear();
+
+    if (raw_msg->is_response()) {
+        jsonrpcpp::response_ptr msg = std::dynamic_pointer_cast<jsonrpcpp::Response>(raw_msg);
+        auto dev_description = msg->result();
+        dev_method_list[dev_name] = dev_description["dev_methods"].get<std::vector<std::string>>();
+    }
+}
+
 CliCache::CliCache(H9Connector* connector): h9d(connector) {
 
 }
@@ -145,6 +173,13 @@ std::vector<std::string>* CliCache::get_dev_list() {
         refresh_dev();
     }
     return &dev_list;
+}
+
+std::vector<std::string>* CliCache::get_dev_method_list(const std::string& dev_name) {
+    if (dev_method_list.count(dev_name) == 0) {
+        refresh_dev_method(dev_name);
+    }
+    return &dev_method_list[dev_name];
 }
 
 std::uint16_t CliCache::get_node_id_by_name(const std::string& name) {
@@ -201,6 +236,7 @@ void CliCache::clear() {
     node_name_to_id.clear();
 
     dev_list.clear();
+    dev_method_list.clear();
 
     node_registries_list.clear();
     node_registries_name_to_number.clear();

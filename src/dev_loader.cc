@@ -8,8 +8,9 @@
 #include <spdlog/spdlog.h>
 
 #include "antenna_switch_dev.h"
+#include "thunder_switch_dev.h"
 #include "libconfuse_helper.h"
-#include "node_dev_mgr.h"
+#include "node_mgr.h"
 
 DevLoader::DevLoader() {
 }
@@ -17,7 +18,7 @@ DevLoader::DevLoader() {
 DevLoader::~DevLoader() {
 }
 
-void DevLoader::load_file(const std::string& devs_desc_file, NodeDevMgr* dev_mgr) {
+void DevLoader::load_file(const std::string& devs_desc_file, NodeMgr* dev_mgr) {
     cfg_opt_t cfg_dev_sec[] = {
         CFG_STR("type", nullptr, CFGF_NONE),
         CFG_INT("node_id", -1, CFGF_NONE),
@@ -60,6 +61,9 @@ void DevLoader::load_file(const std::string& devs_desc_file, NodeDevMgr* dev_mgr
 
         if (type == "AntennaSwitchDev") {
             dev_mgr->add_dev(new AntennaSwitchDev(dev_name, dev_mgr, node_id));
+        }
+        else if (type == "ThunderSwitchDev") {
+            dev_mgr->add_dev(new ThunderSwitchDev(dev_name, dev_mgr, {0}));
         }
     }
 }

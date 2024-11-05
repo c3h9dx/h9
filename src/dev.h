@@ -6,21 +6,21 @@
 #pragma once
 
 #include <functional>
-#include <map>
 #include <jsonrpcpp/jsonrpcpp.hpp>
+#include <map>
 
 #include "node.h"
-#include "node_dev_mgr.h"
+#include "node_mgr.h"
 
 class DevStatusObserver;
 
 class Dev {
   private:
-    std::vector<std::uint16_t> dependent_on_nodes;
+    const std::vector<std::uint16_t> dependent_on_nodes;
     std::map<std::string, std::function<nlohmann::json(const std::map<std::string, nlohmann::json>& param_map)>> method_map;
   protected:
-    NodeDevMgr* node_mgr;
-    Dev(std::string type, std::string name, NodeDevMgr*node_mgr, std::vector<std::uint16_t> nodes);
+    NodeMgr* node_mgr;
+    Dev(std::string type, std::string name, NodeMgr*node_mgr, std::vector<std::uint16_t> nodes);
     void emit_dev_state(const nlohmann::json& dev_status);
 
     template<typename DevClass>

@@ -56,6 +56,10 @@ static char* cli_dev_completion_wrapper(const char* text, int state) {
     return CLIParsingDriver::get().cli_dev_completion(text, state);
 }
 
+static char* cli_dev_method_completion_wrapper(const char* text, int state) {
+    return CLIParsingDriver::get().cli_dev_method_completion(text, state);
+}
+
 std::string HackParser::yysyntax_error_(const context& yyctx) const {
     symbol_kind_type yyarg[YYNTOKENS];
     int a = yyctx.expected_tokens(yyarg, YYNTOKENS);
@@ -167,6 +171,7 @@ char** CLIParsingDriver::cli_completion(const char* text, int start, int end) {
     else {
         last_node_id = 0xffff;
         last_reg_number = 0;
+        last_dev = "";
 
         char* input = strndup(rl_line_buffer, start);
         completion_parser.alt.clear();
@@ -215,6 +220,17 @@ char** CLIParsingDriver::cli_completion(const char* text, int start, int end) {
             char* unescape_text = unescape(text);
 
             ret_tmp = rl_completion_matches(unescape_text, cli_bit_completion_wrapper);
+            if (ret_tmp && ret_tmp[0] && rl_completion_quote_character == 0) {
+                char* escape_substitution = escape(ret_tmp[0]);
+                free(ret_tmp[0]);
+                ret_tmp[0] = escape_substitution;
+            }
+            free(unescape_text);
+        }
+        else if (last_token == yy::parser::symbol_kind::symbol_kind_type::S_T_METHOD) {
+            char* unescape_text = unescape(text);
+
+            ret_tmp = rl_completion_matches(unescape_text, cli_dev_method_completion_wrapper);
             if (ret_tmp && ret_tmp[0] && rl_completion_quote_character == 0) {
                 char* escape_substitution = escape(ret_tmp[0]);
                 free(ret_tmp[0]);
@@ -372,6 +388,32 @@ char* CLIParsingDriver::cli_dev_completion(const char* text, int state) {
     return nullptr;
 }
 
+char* CLIParsingDriver::cli_dev_method_completion(const char* text, int state) {
+    static std::vector<std::string>* completion_list = nullptr;
+    static std::remove_pointer<decltype(completion_list)>::type::iterator it;
+    static int len;
+
+    if (!state) {
+        len = strlen(text);
+
+        completion_list = cache.get_dev_method_list(last_dev);
+
+        it = completion_list->begin();
+    }
+
+    if (state == 0 && text[0] == '\0') {
+        return strdup("<method>");
+    }
+
+    while (it != completion_list->end()) {
+        if ((*it).compare(0, len, text) == 0) {
+            return strdup((*it++).c_str());
+        }
+        it++;
+    }
+    return nullptr;
+}
+
 yy::parser::symbol_type CLIParsingDriver::tee_token(yy::parser::symbol_type symbol) {
     last_token = symbol.type_get();
     return std::move(symbol);
@@ -383,6 +425,10 @@ void CLIParsingDriver::set_last_parsed_node_id(std::uint16_t id) {
 
 void CLIParsingDriver::set_last_parsed_reg_number(std::uint16_t num) {
     last_reg_number = num;
+}
+
+void CLIParsingDriver::set_last_parsed_dev_name(std::string name) {
+    last_dev = name;
 }
 
 int CLIParsingDriver::parse(const char* str) {

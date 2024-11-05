@@ -36,6 +36,16 @@ if(NOT READLINE_FOUND)
     set(READLINE_INCLUDE_DIRS ${Readline_INCLUDE_DIRS})
 endif()
 
+if (DEFINED ENV{H9CAN_PATH})
+    set(H9CAN_PATH $ENV{H9CAN_PATH})
+    message("H9CAN_PATH is: " ${H9CAN_PATH})
+else ()
+    set(H9CAN_PATH ${PROJECT_SOURCE_DIR}/h9can)
+    message("H9CAN_PATH not set, using local: " ${H9CAN_PATH})
+endif ()
+
+include(${H9CAN_PATH}/cmake/unix.cmake)
+
 include_directories(${CMAKE_SOURCE_DIR}/thirdparty/ ${CMAKE_CURRENT_BINARY_DIR}/src/)
 
 link_directories(/usr/local/lib/ /opt/local/lib/)

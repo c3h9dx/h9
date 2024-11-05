@@ -9,7 +9,7 @@
 #include <string>
 #include <map>
 
-class NodeDevMgr;
+class NodeMgr;
 
 class DevLoader {
   public:
@@ -25,5 +25,5 @@ class DevLoader {
     DevLoader();
     ~DevLoader();
 
-    void load_file(const std::string& devs_desc_file, NodeDevMgr* dev_mgr);
+    void load_file(const std::string& devs_desc_file, NodeMgr* dev_mgr);
 };

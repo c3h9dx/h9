@@ -8,9 +8,11 @@
 
 #pragma once
 
+#include <chrono>
 #include <nlohmann/json.hpp>
 #include <string>
 
+#include "types.h"
 #include "h9frame.h"
 
 class ExtH9Frame {
@@ -19,6 +21,8 @@ class ExtH9Frame {
     std::string _origin;
 
     unsigned int valid;
+
+    timestamp_t _creation_timestamp;
   public:
     constexpr static unsigned int VALID_ORIGIN = 1 << 0;
     constexpr static unsigned int VALID_PRIORITY = 1 << 1;
@@ -32,13 +36,15 @@ class ExtH9Frame {
     constexpr static unsigned int VALID_ALL = (VALID_ORIGIN | VALID_PRIORITY | VALID_TYPE | VALID_SEQNUM | VALID_DESTINATION_ID | VALID_SOURCE_ID | VALID_DLC | VALID_DATA);
     constexpr static unsigned int VALID_UNUSED = ~VALID_ALL;
 
-    ExtH9Frame() = default;
+    ExtH9Frame();
     ExtH9Frame(const H9frame& frame, const std::string& origin);
     ExtH9Frame(const std::string& origin, H9frame::Type type, std::uint16_t dst, std::uint8_t dlc = 0, const std::vector<std::uint8_t>& data = {});
     ExtH9Frame(const std::string& origin, H9frame::Priority priority, H9frame::Type type, std::uint16_t dst, std::uint8_t dlc = 0, const std::vector<std::uint8_t>& data = {});
 
     unsigned int valid_member();
     unsigned int invalid_member();
+
+    timestamp_t creation_timestamp() const { return _creation_timestamp; }
 
     const H9frame& frame() const { return _frame; }
 

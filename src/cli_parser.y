@@ -40,7 +40,7 @@
 
 %token T_DISCOVER       "discover"
 %token T_LIST           "list"
-
+%token T_RELOAD_DESCRIPTION          "reload_description"
 %token T_NODE           "node"
 %token T_RESET          "reset"
 %token T_INFO           "info"
@@ -53,6 +53,7 @@
 
 %token T_DEV            "dev"
 %token T_STATUS         "status"
+%token T_METHOD         "method"
 
 %token MINUS            "-"
 %token PLUS             "+"
@@ -134,6 +135,10 @@ nodes_command:
      "discover"                         {
                                             jsonrpcpp::Id id(0);
                                             $$ = jsonrpcpp::Request(id, "discover_nodes");
+                                        }
+     | "reload_description"             {
+                                            jsonrpcpp::Id id(0);
+                                            $$ = jsonrpcpp::Request(id, "reload_nodes_description");
                                         }
      | "list"                           {
                                             jsonrpcpp::Id id(0);
@@ -231,8 +236,7 @@ node_reg_command:
 
 dev_exp:
     "dev" str_exp                       {
-                                            //std::uint16_t id = cli_drv.cache.get_node_id_by_name($2);
-                                            //cli_drv.set_last_parsed_node_id(id);
+                                            cli_drv.set_last_parsed_dev_name($2);
                                             $$ = nlohmann::json({{"dev_name", $2}});
                                         }
 
@@ -244,6 +248,11 @@ dev_command:
     | dev_exp "status"      	        {
                                             jsonrpcpp::Id id(0);
                                             $$ = jsonrpcpp::Request(id, "get_dev_status", $1);
+                                        }
+    | dev_exp "method" STRING           {
+                                            jsonrpcpp::Id id(0);
+                                            $1["method"] = $3;
+                                            $$ = jsonrpcpp::Request(id, "dev_method_call", $1);
                                         }
 
 str_exp:
