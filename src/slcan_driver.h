@@ -14,6 +14,7 @@
 class SlcanDriver: public BusDriver {
   private:
     const std::string _tty;
+    const std::string _init_string;
     bool noblock;
     std::string recv_buf;
 
@@ -22,7 +23,7 @@ class SlcanDriver: public BusDriver {
     std::queue<std::shared_ptr<BusFrame>> last_send;
 
   public:
-    SlcanDriver(const std::string& name, const std::string& tty);
+    SlcanDriver(const std::string& name, const std::string& tty, const std::string& init_string);
     int open() override;
 
     static std::string build_slcan_msg(const H9frame& frame);

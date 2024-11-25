@@ -7,22 +7,24 @@
 
 #include <spdlog/spdlog.h>
 
-#include "antenna_switch_dev.h"
-#include "thunder_switch_dev.h"
+#include <utility>
+
 #include "libconfuse_helper.h"
 #include "node_mgr.h"
 
-DevLoader::DevLoader() {
-}
+std::map<std::string, DevLoader::CreteDevFun> DevLoader::devs_create_fun;
 
-DevLoader::~DevLoader() {
+Dev* DevLoader::create_dev(const std::string& type, std::string name, NodeMgr* node_mgr, std::vector<std::uint16_t> nodes) {
+    if (DevLoader::devs_create_fun.count(type)) {
+        return DevLoader::devs_create_fun[type](std::move(name), node_mgr, std::move(nodes));
+    }
+    return nullptr;
 }
 
 void DevLoader::load_file(const std::string& devs_desc_file, NodeMgr* dev_mgr) {
     cfg_opt_t cfg_dev_sec[] = {
         CFG_STR("type", nullptr, CFGF_NONE),
-        CFG_INT("node_id", -1, CFGF_NONE),
-        CFG_INT("controller_id", -1, CFGF_NONE),
+        CFG_INT_LIST("node_ids", nullptr, CFGF_NONE),
         CFG_END()};
 
     cfg_opt_t cfg_opts[] = {
@@ -31,8 +33,7 @@ void DevLoader::load_file(const std::string& devs_desc_file, NodeMgr* dev_mgr) {
 
     cfg = cfg_init(cfg_opts, CFGF_NONE);
     cfg_set_error_function(cfg, confuse_helpers::cfg_err_func);
-    cfg_set_validate_func(cfg, "dev|node_id", confuse_helpers::validate_node_id);
-    cfg_set_validate_func(cfg, "dev|controller_id", confuse_helpers::validate_node_id);
+    cfg_set_validate_func(cfg, "dev|node_ids", confuse_helpers::validate_node_id);
     int ret = cfg_parse(cfg, devs_desc_file.c_str());
 
     if (ret == CFG_FILE_ERROR) {
@@ -49,21 +50,25 @@ void DevLoader::load_file(const std::string& devs_desc_file, NodeMgr* dev_mgr) {
     int n = cfg_size(cfg, "dev");
     for (int i = 0; i < n; i++) {
         cfg_t* dev_section = cfg_getnsec(cfg, "dev", i);
-        // if (bus_driver_section) {
+
         std::string dev_name = cfg_title(dev_section);
         std::string type = cfg_getstr(dev_section, "type");
-        int node_id = cfg_getint(dev_section, "node_id");
 
-        SPDLOG_WARN(">>> {} {} {}", dev_name, type, node_id);
+        unsigned int ids_len = cfg_size(dev_section, "node_ids");
+        std::vector<std::uint16_t> node_ids(ids_len);
 
-        if (node_id < 0)
-            continue;
-
-        if (type == "AntennaSwitchDev") {
-            dev_mgr->add_dev(new AntennaSwitchDev(dev_name, dev_mgr, node_id));
+        if (ids_len <= 0) {
+            SPDLOG_WARN("Missing nodes for {} dev", dev_name);
         }
-        else if (type == "ThunderSwitchDev") {
-            dev_mgr->add_dev(new ThunderSwitchDev(dev_name, dev_mgr, {0}));
+
+        for (int j = 0; j < ids_len; j++) {
+            node_ids[j] = cfg_getnint(dev_section, "node_ids", j);
+        }
+
+        Dev *tmp = create_dev(type, dev_name, dev_mgr, std::move(node_ids));
+
+        if (tmp) {
+            dev_mgr->add_dev(tmp);
         }
     }
 }

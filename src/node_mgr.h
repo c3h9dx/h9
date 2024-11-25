@@ -19,8 +19,8 @@
 #include <thread>
 
 #include "types.h"
-#include "bus.h"
 #include "dev_loader.h"
+#include "bus.h"
 #include "frameobserver.h"
 #include "node.h"
 #include "raw_node.h"
@@ -59,6 +59,8 @@ class NodeMgr: public FrameObserver {
     std::thread nodes_update_thread_desc;
     void nodes_dev_update_thread();
 
+    void period_dev_update();
+
     Node* create_node(std::uint16_t node_id) noexcept;
     void init_node(std::uint16_t node_id, std::uint16_t node_type, std::uint32_t node_version, char hardware_revision, std::uint8_t reset_reason) noexcept;
     void update_node_last_seen_time(std::uint16_t node_id, timestamp_t timestamp) noexcept;
@@ -89,6 +91,8 @@ class NodeMgr: public FrameObserver {
 
     void load_devs_configuration(const std::string& devs_description_filename);
 
+    void create_devs_workers(int workers);
+
     void response_timeout_duration(int response_timeout_duration);
     int response_timeout_duration() const;
 
@@ -96,12 +100,15 @@ class NodeMgr: public FrameObserver {
 
     int active_devices_count() noexcept;
     bool is_node_exist(std::uint16_t node_id) noexcept;
+    bool is_node_init(std::uint16_t node_id) noexcept;
     std::vector<NodeMgr::NodeDsc> get_nodes_list() noexcept;
 
     std::vector<Node::RegisterDsc> get_registers_list(std::uint16_t node_id) noexcept;
 
     int get_node_info(std::uint16_t node_id, NodeInfo& node_info);
     void node_reset(std::uint16_t node_id);
+    void node_discovery(std::uint16_t node_id, std::uint16_t& type, std::uint16_t& version_major, std::uint16_t& version_minor, char& hardware_revision);
+
     Node::regvalue_t set_register(std::uint16_t node_id, std::uint8_t reg, Node::regvalue_t value);
     Node::regvalue_t get_register(std::uint16_t node_id, std::uint8_t reg);
     Node::regvalue_t set_register_bit(std::uint16_t node_id, std::uint8_t reg, std::uint8_t bit_num);

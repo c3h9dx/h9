@@ -18,6 +18,7 @@
 #include <spdlog/spdlog.h>
 #include <tuple>
 
+#include "h9errno.h"
 #include "frameobserver.h"
 
 class NodeMgr;
@@ -96,8 +97,8 @@ class RawNode {
     friend NodeMgr;
 
   public:
-    constexpr static ssize_t TIMEOUT_ERROR = -1000;
-    constexpr static ssize_t MALFORMED_FRAME_ERROR = -1001;
+    constexpr static ssize_t TIMEOUT_ERROR = -std::to_underlying(h9errno::TIMEOUT_ERROR);
+    constexpr static ssize_t MALFORMED_FRAME_ERROR = -std::to_underlying(h9errno::MALFORMED_FRAME_ERROR);
 
     ~RawNode() = default;
 
@@ -106,6 +107,7 @@ class RawNode {
     std::uint16_t node_id() const noexcept;
 
     ssize_t reset(const std::string& origin);
+    ssize_t discovery(const std::string& origin, std::uint16_t& type, std::uint16_t& version_major, std::uint16_t& version_minor, char& hardware_revision);
 
     int32_t get_node_type(const std::string& origin) noexcept;
     int64_t get_node_version(const std::string& origin, std::uint16_t* major = nullptr, std::uint16_t* minor = nullptr, std::uint16_t* patch = nullptr) noexcept;
@@ -134,6 +136,8 @@ class RawNode {
     ssize_t get_reg(const std::string& origin, std::uint8_t reg, std::uint8_t* reg_val);
     ssize_t get_reg(const std::string& origin, std::uint8_t reg, std::uint16_t* reg_val);
     ssize_t get_reg(const std::string& origin, std::uint8_t reg, std::uint32_t* reg_val);
+
+    static int parse_node_info_frame(const ExtH9Frame& frame, std::uint16_t& node_type, std::uint16_t& version_major, std::uint16_t& version_minor, char& hardware_revision, std::uint8_t& reset_reason);
 };
 
 #endif // H9_RAW_NODE_H

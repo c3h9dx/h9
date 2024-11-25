@@ -6,20 +6,28 @@
 #include "thunder_switch_dev.h"
 #include "dev_node_exception.h"
 
+std::string ThunderSwitchDev::dev_type = "ThunderSwitch";
+DevLoader::RegisterDev ThunderSwitchDev::register_helper(ThunderSwitchDev::dev_type, ThunderSwitchDev::create_dev);
+
 ThunderSwitchDev::ThunderSwitchDev(std::string name, NodeMgr*node_mgr, std::vector<std::uint16_t> nodes):
-    Dev("ThunderSwitchDev", name, node_mgr, nodes) {
+    Dev(ThunderSwitchDev::dev_type, std::move(name), node_mgr, std::move(nodes)),
+    switch_id(0xffff) {
 
     add_method("switch_on", &ThunderSwitchDev::switch_on_method);
     add_method("switch_off", &ThunderSwitchDev::switch_off_method);
 }
 
-void ThunderSwitchDev::init() {
-
+void ThunderSwitchDev::periodic_task() {
+    SPDLOG_INFO("{} periodic_task", name);
 }
 
-void ThunderSwitchDev::update_dev_state(std::uint16_t node_id, const ExtH9Frame& frame) {
-    SPDLOG_INFO("@{} update_dev_state", name);
+bool ThunderSwitchDev::is_init() {
+    return switch_id <= H9frame::H9FRAME_SOURCE_ID_MAX_VALUE;
 }
+
+//void ThunderSwitchDev::update_dev_state(std::uint16_t node_id, const ExtH9Frame& frame) {
+//    SPDLOG_INFO("@{} update_dev_state", name);
+//}
 
 nlohmann::json ThunderSwitchDev::get_dev_state(const std::map<std::string, nlohmann::json>& param_map) {
     return {{"state", 1},

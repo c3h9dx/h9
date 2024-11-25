@@ -32,7 +32,7 @@ configure_file(config_gen.h.in config_gen.h)
 add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
 
 set(H9D_SRC h9d.cc config.h
-        types.h
+        types.h h9errno.h
         h9d_configurator.cc h9d_configurator.h
         h9frame.cc h9frame.h
         ext_h9frame.cc ext_h9frame.h
@@ -64,15 +64,11 @@ set(H9D_SRC h9d.cc config.h
         py_h9.cc py_h9.h
         dev_node_exception.cc dev_node_exception.h
         dev.cc dev.h
-        antenna_switch_dev.cc antenna_switch_dev.h
         dev_status_observer.cc dev_status_observer.h
         fmt_helpers.cc fmt_helpers.h
         dev_loader.cc dev_loader.h
         libconfuse_helper.cc libconfuse_helper.h udp_driver.cc udp_driver.h
-        thunder_switch_dev.cc
-        thunder_switch_dev.h
-        dev_workers.cc
-        dev_workers.h)
+        dev_workers.cc dev_workers.h)
 
 set(CLIENT_COMMON_SRC config.h
         h9frame.cc h9frame.h
@@ -98,9 +94,11 @@ add_custom_command(OUTPUT git_version.h
                   COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/scripts/generate_git_version_header.py > ${CMAKE_CURRENT_BINARY_DIR}/git_version.h~
                   COMMAND /bin/sh -c 'diff ${CMAKE_CURRENT_BINARY_DIR}/git_version.h~ ${CMAKE_CURRENT_BINARY_DIR}/git_version.h 2> /dev/null > /dev/null || { cp ${CMAKE_CURRENT_BINARY_DIR}/git_version.h~ ${CMAKE_CURRENT_BINARY_DIR}/git_version.h\; }' DEPENDS ${H9D_SRC})
 
+add_subdirectory(devs)
 
 add_executable(h9d ${H9D_SRC} git_version.h)
-target_include_directories(h9d PUBLIC ${CONFUSE_INCLUDE_DIRS} ${Python3_INCLUDE_DIRS})
+target_sources(h9d PRIVATE $<TARGET_OBJECTS:DevsLib>)
+target_include_directories(h9d PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CONFUSE_INCLUDE_DIRS} ${Python3_INCLUDE_DIRS})
 target_compile_options(h9d PUBLIC ${CONFUSE_CFLAGS_OTHER})
 target_link_libraries(h9d PUBLIC ${CONFUSE_LIBRARIES} PRIVATE ${ATOMIC_LINK} fmt::fmt nlohmann_json::nlohmann_json spdlog::spdlog Python3::Python)
 install(TARGETS h9d RUNTIME DESTINATION bin)

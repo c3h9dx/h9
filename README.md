@@ -46,6 +46,9 @@ BitRate=125000
 ```
 ```
 sudo apt-get install python3.9-dev
+sudo apt-get install flex bison
+sudo apt-get install libconfuse-dev
+sudo apt-get install libreadline-dev
 sudo apt-get install libspdlog-dev
 sudo apt-get install nlohmann-json3-dev
 cmake .

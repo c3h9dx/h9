@@ -32,9 +32,17 @@ void NodeMgr::nodes_dev_update_thread() {
     //     pthread_setname_np(nodes_update_thread_desc.native_handle(), "node_dev");
     // #endif
 
+    std::chrono::time_point<std::chrono::system_clock> next_task = std::chrono::system_clock::now() + std::chrono::seconds(30);
     while (nodes_update_thread_run) {
         std::unique_lock<std::mutex> lk(frame_queue_mtx);
-        frame_queue_cv.wait(lk, [this]() { return !frame_queue.empty(); });
+
+        if (!frame_queue_cv.wait_until(lk, next_task, [this]() { return !frame_queue.empty(); })) {
+               SPDLOG_LOGGER_TRACE(logger, "Timeout?");
+               next_task = std::chrono::system_clock::now() + std::chrono::seconds(30);
+               lk.unlock();
+               period_dev_update();
+               continue;
+        }
         ExtH9Frame frame = frame_queue.front();
         frame_queue.pop();
         int remained_frame = frame_queue.size();
@@ -47,9 +55,13 @@ void NodeMgr::nodes_dev_update_thread() {
         }
 
         if (frame.type() == H9frame::Type::NODE_INFO || frame.type() == H9frame::Type::NODE_TURNED_ON) {
-            uint16_t node_type = frame.data()[0] << 8 | frame.data()[1];
-            uint16_t version_major = frame.data()[2] << 8 | frame.data()[3];
-            uint16_t version_minor = frame.data()[4] << 8 | frame.data()[5];
+            uint16_t node_type;
+            uint16_t version_major;
+            uint16_t version_minor;
+            char hardware_revision;
+            uint8_t reset_reason;
+
+            RawNode::parse_node_info_frame(frame, node_type, version_major, version_minor, hardware_revision, reset_reason);
 
             uint64_t version = version_major;
             version = version << 16 | version_minor;
@@ -59,7 +71,7 @@ void NodeMgr::nodes_dev_update_thread() {
                 SPDLOG_LOGGER_INFO(logger, "Dev discovered id: {}, type: {}, version: {}.{}{}.", frame.source_id(), frame.data()[0] << 8 | frame.data()[1], version_major, version_minor, (char)frame.data()[6]);
             }
 
-            init_node(frame.source_id(), node_type, version, frame.data()[6], frame.data()[7]);
+            init_node(frame.source_id(), node_type, version, hardware_revision, reset_reason);
         }
         else if (! nodes[frame.source_id()]->is_init()) {
             ExtH9Frame req_frame("h9d", H9frame::Type::DISCOVER, frame.source_id(), 0, {});
@@ -68,11 +80,18 @@ void NodeMgr::nodes_dev_update_thread() {
 
         update_node_last_seen_time(frame.source_id(), frame.creation_timestamp());
 
-        // TODO: wykonywac przez workerow
         nodes[frame.source_id()]->on_frame_recv(frame);
     }
 
     detach();
+}
+
+void NodeMgr::period_dev_update() {
+    devs_map_mtx.lock_shared();
+    for (auto dev : devs_map) {
+        dev_workers.dev_periodic_task(dev.second);
+    }
+    devs_map_mtx.unlock_shared();
 }
 
 Node* NodeMgr::create_node(std::uint16_t node_id) noexcept {
@@ -137,6 +156,10 @@ void NodeMgr::load_devs_configuration(const std::string& devs_description_filena
     dev_desc_loader.load_file(devs_description_filename, this);
 }
 
+void NodeMgr::create_devs_workers(int workers) {
+    dev_workers.create_devs_workers(workers);
+}
+
 void NodeMgr::response_timeout_duration(int response_timeout_duration) {
     _response_timeout_duration = response_timeout_duration;
 }
@@ -164,12 +187,16 @@ bool NodeMgr::is_node_exist(std::uint16_t node_id) noexcept {
     return nodes[node_id] != nullptr;
 }
 
+bool NodeMgr::is_node_init(std::uint16_t node_id) noexcept {
+    return is_node_exist(node_id) && nodes[node_id]->is_init();
+}
+
 std::vector<NodeMgr::NodeDsc> NodeMgr::get_nodes_list() noexcept {
     std::vector<NodeMgr::NodeDsc> ret;
 
     for (std::uint16_t id = 0; id <= H9frame::H9FRAME_SOURCE_ID_MAX_VALUE; ++id) {
-        if (nodes[id])
-            ret.push_back({id, nodes[id]->node_type(), nodes[id]->node_version_major(), nodes[id]->node_version_minor(), nodes[id]->node_hardware_revision(), nodes[id]->node_reset_reason()});
+        if (nodes[id] && nodes[id]->is_init())
+            ret.push_back({id, nodes[id]->node_type(), nodes[id]->node_version_major(), nodes[id]->node_version_minor(), nodes[id]->node_hardware_revision(), nodes[id]->node_reset_reason(), nodes[id]->node_name()});
         ;
     }
 
@@ -207,6 +234,13 @@ void NodeMgr::node_reset(std::uint16_t node_id) {
     if (nodes[node_id]) {
         nodes[node_id]->node_reset();
         return;
+    }
+    throw NodeNotExistException();
+}
+
+void NodeMgr::node_discovery(std::uint16_t node_id, std::uint16_t& type, std::uint16_t& version_major, std::uint16_t& version_minor, char& hardware_revision) {
+    if (nodes[node_id]) {
+        nodes[node_id]->discovery("h9d", type, version_major, version_minor, hardware_revision);
     }
     throw NodeNotExistException();
 }
@@ -323,7 +357,7 @@ nlohmann::json NodeMgr::get_dev_state(const std::string& dev_name, const TCPClie
 void NodeMgr::emit_dev_state(const std::string& dev_id, const nlohmann::json& dev_status) {
     dev_status_observer_mtx.lock_shared();
     for (auto obs : dev_status_observer) {
-        obs->on_dev_state_update(dev_status);
+        obs->on_dev_state_update(dev_id, dev_status);
     }
     dev_status_observer_mtx.unlock_shared();
 }
@@ -362,8 +396,6 @@ void NodeMgr::add_dev(Dev* dev) {
                 continue;
             }
         }
-
-        dev_workers.dev_init(dev);
     } else {
         SPDLOG_LOGGER_ERROR(logger, "Can not add dev: '{}', type: {} - dev exist", dev->name, dev->type);
         delete dev;

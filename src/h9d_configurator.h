@@ -30,7 +30,8 @@ class H9dConfigurator {
     constexpr static char vendpoint_logger_name[] = "vend";
 
     constexpr static int default_source_id = 509;
-    constexpr static int default_response_timeout_duration = 5;
+    constexpr static int default_response_timeout = 5;
+    constexpr static int devs_workers = 5;
   private:
     constexpr static char log_debug_pattern[] = "%^[%L %T.%e] [%n:%t] [%s:%#]%$ %v";
     constexpr static char log_pattern[] = "%^[%L %T.%e] [%n:%t]%$ %v";

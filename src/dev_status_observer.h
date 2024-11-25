@@ -18,5 +18,5 @@ class DevStatusObserver {
     DevStatusObserver(TCPClientThread* tcp_client_thread, NodeMgr* mgr);
     void detach();
     ~DevStatusObserver();
-    void on_dev_state_update(const nlohmann::json& dev_status);
+    void on_dev_state_update(const std::string &dev, const nlohmann::json& dev_status);
 };

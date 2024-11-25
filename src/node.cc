@@ -173,6 +173,18 @@ void Node::node_reset() {
     }
 }
 
+void Node::node_discovery(std::uint16_t& type, std::uint16_t& version_major, std::uint16_t& version_minor, char& hardware_revision) {
+    ssize_t ret;
+    if ((ret = discovery("h9d", type, version_major, version_minor, hardware_revision)) < 0) {
+        if (ret == RawNode::TIMEOUT_ERROR)
+            throw TimeoutException();
+        else if (ret == RawNode::MALFORMED_FRAME_ERROR)
+            throw MalformedFrameException();
+        else
+            throw NodeException(-ret);
+    }
+}
+
 Node::regvalue_t Node::set_register(std::uint8_t reg, Node::regvalue_t value) {
     if (register_map.count(reg)) {
         if (register_map[reg].writable) {

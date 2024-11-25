@@ -91,6 +91,42 @@ ssize_t RawNode::reset(const std::string& origin) {
     return MALFORMED_FRAME_ERROR;
 }
 
+ssize_t RawNode::discovery(const std::string& origin, std::uint16_t& type, std::uint16_t& version_major, std::uint16_t& version_minor, char& hardware_revision) {
+    H9FrameComparator comparator;
+    comparator.set_source_id(_node_id);
+    comparator.set_type(H9frame::Type::NODE_INFO);
+    comparator.set_type_in_alternate_set(H9frame::Type::ERROR);
+
+    FramePromise* frame_promise = create_frame_promise(comparator);
+
+    ExtH9Frame req(origin, H9frame::Type::DISCOVER, _node_id, 0, {});
+
+    int seqnum = bus->send_frame(req);
+    frame_promise->set_comparator_seqnum(seqnum);
+
+    auto future = frame_promise->get_future();
+
+    if (future.wait_for(std::chrono::seconds(node_mgr->response_timeout_duration())) != std::future_status::ready) {
+        destroy_frame_promise(frame_promise);
+        return TIMEOUT_ERROR; // timeout
+    }
+
+    ExtH9Frame res = future.get();
+
+    destroy_frame_promise(frame_promise);
+
+    if (res.type() == H9frame::Type::NODE_INFO && res.dlc() > 6) {
+        uint8_t rr;
+        parse_node_info_frame(res, type, version_major, version_minor, hardware_revision, rr);
+        return res.dlc();
+    }
+    else if (res.type() == H9frame::Type::ERROR && res.dlc() == 1) {
+        return -res.data()[0];
+    }
+
+    return MALFORMED_FRAME_ERROR;
+}
+
 int32_t RawNode::get_node_type(const std::string& origin) noexcept {
     std::uint16_t buf;
     ssize_t ret = get_reg(origin, NODE_TYPE_STD_REGISTER, sizeof(buf), reinterpret_cast<std::uint8_t*>(&buf));
@@ -325,4 +361,17 @@ ssize_t RawNode::get_reg(const std::string& origin, std::uint8_t reg, std::uint3
     ssize_t ret = get_reg(origin, reg, sizeof(buf), reinterpret_cast<std::uint8_t*>(&buf));
     *reg_val = ntohl(buf);
     return ret;
+}
+
+int RawNode::parse_node_info_frame(const ExtH9Frame& frame, std::uint16_t& node_type, std::uint16_t& version_major, std::uint16_t& version_minor, char& hardware_revision, std::uint8_t& reset_reason) {
+//    if (frame.dlc() < 7)
+//        return MALFORMED_FRAME_ERROR;
+    node_type = frame.data()[0] << 8 | frame.data()[1];
+    version_major = frame.data()[2] << 8 | frame.data()[3];
+    version_minor = frame.data()[4] << 8 | frame.data()[5];
+
+    hardware_revision = frame.data()[6];
+    reset_reason = frame.data()[7];
+
+    return 0;
 }

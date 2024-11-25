@@ -25,7 +25,7 @@ DevStatusObserver::~DevStatusObserver() {
     SPDLOG_TRACE("~DevStatusObserver(this={})", fmt::ptr(this));
 }
 
-void DevStatusObserver::on_dev_state_update(const nlohmann::json& dev_status) {
-    jsonrpcpp::Notification n("dev_status_update", nlohmann::json({{"status", dev_status}}));
+void DevStatusObserver::on_dev_state_update(const std::string &dev, const nlohmann::json& dev_status) {
+    jsonrpcpp::Notification n("dev_status_update", nlohmann::json({{"dev", dev},{"status", dev_status}}));
     client->send_msg(std::make_shared<jsonrpcpp::Notification>(std::move(n)));
 }

@@ -114,28 +114,34 @@ void Bus::recv_thread() {
         else {
             for (const auto& [socket, bus_driver] : bus) {
                 if (event_notificator.is_socket_event(number_of_events, socket)) {
-                    int ret;
-                    do {
-                        BusFrame frame;
-                        ret = bus_driver->recv_frame(&frame);
-                        if (ret >= BusDriver::RECV_FRAME) {
-                            ++received_frames_counter;
-                            ++(*received_frames_counter_by_type[H9frame::to_underlying(frame.type())]);
+                    try {
+                        int ret;
+                        do {
+                            BusFrame frame;
+                            ret = bus_driver->recv_frame(&frame);
+                            if (ret >= BusDriver::RECV_FRAME) {
+                                ++received_frames_counter;
+                                ++(*received_frames_counter_by_type[H9frame::to_underlying(frame.type())]);
 
-                            SPDLOG_LOGGER_DEBUG(frames_logger, "Recv frame {}.", frame);
-                            frames_recv_file_logger->info(SimpleJSONBusFrameWraper(frame));
+                                SPDLOG_LOGGER_DEBUG(frames_logger, "Recv frame {}.", frame);
+                                frames_recv_file_logger->info(SimpleJSONBusFrameWraper(frame));
 
-                            notify_frame_recv_observer(frame);
+                                notify_frame_recv_observer(frame);
 
-                            if (_forwarding) {
-                                bool queue_empty = forward_queue.empty();
-                                forward_queue.push(std::make_shared<BusFrame>(std::move(frame)));
-                                if (queue_empty) {
-                                    event_notificator.trigger_async_event();
+                                if (_forwarding) {
+                                    bool queue_empty = forward_queue.empty();
+                                    forward_queue.push(std::make_shared<BusFrame>(std::move(frame)));
+                                    if (queue_empty) {
+                                        event_notificator.trigger_async_event();
+                                    }
                                 }
                             }
-                        }
-                    } while (ret - 1 >= BusDriver::RECV_FRAME);
+                        } while (ret - 1 >= BusDriver::RECV_FRAME);
+                    }
+                    catch (const std::exception &e) {
+                        SPDLOG_LOGGER_CRITICAL(logger, "Endpoint {} critical error: {}", bus_driver->name, e.what());
+                        std::abort();
+                    }
                 }
             }
         }

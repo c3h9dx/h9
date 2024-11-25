@@ -16,8 +16,9 @@
 #include <termios.h>
 #include <unistd.h>
 
-SlcanDriver::SlcanDriver(const std::string& name, const std::string& tty):
+SlcanDriver::SlcanDriver(const std::string& name, const std::string& tty, const std::string& init_string):
     BusDriver(name, "SLCAN"),
+    _init_string(init_string),
     _tty(tty) {
     noblock = false;
 }
@@ -66,6 +67,17 @@ int SlcanDriver::open() {
 
     if (tcsetattr(socket_fd, TCSANOW, &options) != 0) {
         throw std::system_error(errno, std::generic_category(), __FILE__ + std::string(":") + std::to_string(__LINE__));
+    }
+
+    if (_init_string != "") {
+        ssize_t nbyte = write(socket_fd, _init_string.c_str(), _init_string.size());
+        if (nbyte <= 0) {
+            if (nbyte == 0 || errno == ENXIO) {
+                close();
+            }
+            throw std::system_error(errno, std::generic_category(), __FILE__ + std::string(":") + std::to_string(__LINE__));
+        }
+        SPDLOG_LOGGER_INFO(logger, "Using init command: {:?}", _init_string.c_str());
     }
 
     return socket_fd;
@@ -138,10 +150,10 @@ int SlcanDriver::recv_data(H9frame* frame) {
             if (nbyte == 0 || errno == ENXIO) {
                 close();
             }
-            throw std::system_error(errno, std::system_category(), std::to_string(errno) + __FILE__ + std::string(":") + std::to_string(__LINE__));
+            throw std::system_error(errno, std::system_category(), std::to_string(errno) + " " + __FILE__ + std::string(":") + std::to_string(__LINE__));
         }
         buf[nbyte] = '\0';
-        //SPDLOG_TRACE("recv raw({}): {}", nbyte, (char*)&buf[0]);
+//        SPDLOG_TRACE("recv raw({}): {}", nbyte, (char*)&buf[0]);
         for (int i = 0; i < nbyte; ++i) {
             recv_buf.push_back(buf[i]);
             if (buf[i] == '\r' || buf[i] == '\a') {
