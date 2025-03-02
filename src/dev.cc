@@ -43,7 +43,7 @@ static int getrusage_thread(struct rusage *rusage) {
 
     return ret;
 #else
-    return getrusage(RUSAGE_THREAD, &rusage);
+    return getrusage(RUSAGE_THREAD, rusage);
 #endif
 }
 

@@ -80,6 +80,7 @@ void Node::load_description() {
     register_map[NODE_BUILD_INFO_STD_REGISTER] = {NODE_BUILD_INFO_STD_REGISTER, "Build metadata", "str", 48, true, false, {}, ""};
     register_map[NODE_ID_STD_REGISTER] = {NODE_ID_STD_REGISTER, "Node id", "uint", 9, true, true, {}, ""};
     register_map[NODE_MCU_TYPE_STD_REGISTER] = {NODE_MCU_TYPE_STD_REGISTER, "MCU type", "uint", 8, true, false, {}, ""};
+    register_map[NODE_SN_STD_REGISTER] = {NODE_SN_STD_REGISTER, "MCU SN", "uint", 32, true, false, {}, ""};
     register_map[NODE_RESET_REASON_STD_REGISTER] = {NODE_RESET_REASON_STD_REGISTER, "Node reset reason", "uint", 8, true, false, {}, ""};
 
     for (const auto& it : nodedescloader.get_node_register_by_type(_node_type)) {
@@ -242,6 +243,23 @@ Node::regvalue_t Node::set_register(std::uint8_t reg, Node::regvalue_t value) {
                     return {val};
                 }
             }
+            else if (std::holds_alternative<float>(value) && register_map[reg].type == "float") {
+                auto v = std::get<float>(value);
+                float val;
+                ssize_t ret;
+                if ((ret = set_reg("h9d", reg, v, &val)) < 0) {
+                    if (ret == RawNode::TIMEOUT_ERROR)
+                        throw TimeoutException();
+                    else if (ret == RawNode::MALFORMED_FRAME_ERROR)
+                        throw MalformedFrameException();
+                    else
+                        throw NodeException(-ret);
+                }
+                else if (ret != sizeof(val)) {
+                    throw SizeMismatchException();
+                }
+                return {val};
+            }
             else if (std::holds_alternative<std::string>(value) && register_map[reg].type == "str") {
                 auto v = std::get<std::string>(value);
                 size_t len = register_map[reg].size / 8;
@@ -303,7 +321,23 @@ Node::regvalue_t Node::set_register(std::uint8_t reg, Node::regvalue_t value) {
 Node::regvalue_t Node::get_register(std::uint8_t reg) {
     if (register_map.count(reg)) {
         if (register_map[reg].readable) {
-            if (register_map[reg].type != "str") {
+            if (register_map[reg].type != "str" && register_map[reg].size == 32) {
+                std::float_t val;
+                ssize_t ret;
+                if ((ret = get_reg("h9d", reg, &val)) < 0) {
+                    if (ret == RawNode::TIMEOUT_ERROR)
+                        throw TimeoutException();
+                    else if (ret == RawNode::MALFORMED_FRAME_ERROR)
+                        throw MalformedFrameException();
+                    else
+                        throw NodeException(-ret);
+                }
+                else if (ret != sizeof(val)) {
+                    throw SizeMismatchException();
+                }
+                return {val};
+            }
+            else if (register_map[reg].type != "str") {
                 if (register_map[reg].size <= 8) {
                     std::uint8_t val;
                     ssize_t ret;

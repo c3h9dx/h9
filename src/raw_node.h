@@ -123,6 +123,7 @@ class RawNode {
     ssize_t set_reg(const std::string& origin, std::uint8_t reg, std::uint8_t reg_val, std::uint8_t* reg_after_set = nullptr);
     ssize_t set_reg(const std::string& origin, std::uint8_t reg, std::uint16_t reg_val, std::uint16_t* reg_after_set = nullptr);
     ssize_t set_reg(const std::string& origin, std::uint8_t reg, std::uint32_t reg_val, std::uint32_t* reg_after_set = nullptr);
+    ssize_t set_reg(const std::string& origin, std::uint8_t reg, float reg_val, float* reg_after_set = nullptr);
 
     /// Read registry from the node
     /// @param[in] origin client idstring
@@ -136,6 +137,7 @@ class RawNode {
     ssize_t get_reg(const std::string& origin, std::uint8_t reg, std::uint8_t* reg_val);
     ssize_t get_reg(const std::string& origin, std::uint8_t reg, std::uint16_t* reg_val);
     ssize_t get_reg(const std::string& origin, std::uint8_t reg, std::uint32_t* reg_val);
+    ssize_t get_reg(const std::string& origin, std::uint8_t reg, float* reg_val);
 
     static int parse_node_info_frame(const ExtH9Frame& frame, std::uint16_t& node_type, std::uint16_t& version_major, std::uint16_t& version_minor, char& hardware_revision, std::uint8_t& reset_reason);
 };

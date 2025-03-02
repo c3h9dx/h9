@@ -304,6 +304,18 @@ ssize_t RawNode::set_reg(const std::string& origin, std::uint8_t reg, std::uint3
     return ret;
 }
 
+ssize_t RawNode::set_reg(const std::string& origin, std::uint8_t reg, float reg_val, float* reg_after_set) {
+    uint32_t tmp_in, tmp_out;
+    memcpy(&tmp_in, &reg_val, 4);
+
+    ssize_t ret = set_reg(origin, reg, sizeof(tmp_in), reinterpret_cast<std::uint8_t*>(&tmp_in), reinterpret_cast<std::uint8_t*>(tmp_out));
+
+    if (reg_after_set) {
+        memcpy(reg_after_set, &tmp_out, 4);
+    }
+    return ret;
+}
+
 ssize_t RawNode::get_reg(const std::string& origin, std::uint8_t reg, std::size_t length, std::uint8_t* reg_val) {
     H9FrameComparator comparator;
     comparator.set_source_id(_node_id);
@@ -360,6 +372,13 @@ ssize_t RawNode::get_reg(const std::string& origin, std::uint8_t reg, std::uint3
     std::uint32_t buf;
     ssize_t ret = get_reg(origin, reg, sizeof(buf), reinterpret_cast<std::uint8_t*>(&buf));
     *reg_val = ntohl(buf);
+    return ret;
+}
+
+ssize_t RawNode::get_reg(const std::string& origin, std::uint8_t reg, float* reg_val) {
+    uint32_t tmp_out;
+    ssize_t ret = get_reg(origin, reg, sizeof(tmp_out), reinterpret_cast<std::uint8_t*>(&tmp_out));
+    memcpy(reg_val, &tmp_out, 4);
     return ret;
 }
 

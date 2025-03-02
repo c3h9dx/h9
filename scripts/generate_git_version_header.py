@@ -20,13 +20,13 @@ if __name__ == "__main__":
 
         output = cp.stdout.strip()
         r = re.search(r'^v([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9]+)-([a-z0-9]+))?(?:-(dirty))?', output)
-
-        major = r.group(1)
-        minor = r.group(2)
-        patch = r.group(3)
-        commit_num = r.group(4)
-        commit_sha = r.group(5)
-        dirty = r.group(6)
+        if r:
+            major = r.group(1)
+            minor = r.group(2)
+            patch = r.group(3)
+            commit_num = r.group(4)
+            commit_sha = r.group(5)
+            dirty = r.group(6)
 
     out = """/*
  * H9 project

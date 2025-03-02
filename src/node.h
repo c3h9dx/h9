@@ -30,7 +30,7 @@ class Dev;
 class Node: protected RawNode {
   public:
     using RegisterDsc = NodeDescLoader::RegisterDesc;
-    using regvalue_t = std::variant<std::string, std::int64_t, std::vector<std::uint8_t>>;
+    using regvalue_t = std::variant<std::string, std::int64_t, float, std::vector<std::uint8_t>>;
 
   private:
     std::shared_ptr<spdlog::logger> logger;

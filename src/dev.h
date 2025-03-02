@@ -6,8 +6,9 @@
 #pragma once
 
 #include <functional>
-#include <jsonrpcpp/jsonrpcpp.hpp>
 #include <map>
+#include <jsonrpcpp/jsonrpcpp.hpp>
+#include <sys/resource.h>
 
 #include "node.h"
 #include "node_mgr.h"

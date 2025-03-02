@@ -64,6 +64,7 @@ class Bus: public FrameSubject {
 
     MetricsCollector::counter_t& sent_frames_counter;
     MetricsCollector::counter_t& received_frames_counter;
+    MetricsCollector::counter_t& forward_frames_counter;
     // MetricsCollector::counter_t& size_of_send_queue;
 
     constexpr static int number_of_frame_types = 1 << H9frame::H9FRAME_TYPE_BIT_LENGTH;

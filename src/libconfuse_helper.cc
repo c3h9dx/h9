@@ -54,7 +54,8 @@ int validate_node_register_type(cfg_t* cfg, cfg_opt_t* opt) {
         return 0;
     else if (strcmp(type, "char") == 0)
         return 0;
-
+    else if (strcmp(type, "float") == 0)
+        return 0;
     cfg_error(cfg, "invalid value for option '%s' in section '%s': %s", opt->name, cfg->name, type);
     return -1;
 }

@@ -304,6 +304,9 @@ nlohmann::json API::get_register_value(TCPClientThread* client_thread, const jso
         if (std::holds_alternative<std::int64_t>(res)) {
             r = std::get<std::int64_t>(res);
         }
+        else if (std::holds_alternative<float>(res)) {
+            r = std::get<float>(res);
+        }
         else if (std::holds_alternative<std::string>(res)) {
             r = std::get<std::string>(res);
         }
@@ -327,6 +330,9 @@ nlohmann::json API::set_register_value(TCPClientThread* client_thread, const jso
         reg = params.param_map.at("reg").get<std::uint8_t>();
         if (params.param_map.at("value").type() == nlohmann::json::value_t::string) {
             val = params.param_map.at("value").get<std::string>();
+        }
+        else if (params.param_map.at("value").type() == nlohmann::json::value_t::number_float) {
+            val = params.param_map.at("value").get<float>();
         }
         else if (params.param_map.at("value").type() == nlohmann::json::value_t::number_integer || params.param_map.at("value").type() == nlohmann::json::value_t::number_unsigned) {
             val = params.param_map.at("value").get<std::int64_t>();
@@ -357,6 +363,9 @@ nlohmann::json API::set_register_value(TCPClientThread* client_thread, const jso
         auto res = node_dev_mgr->set_register(node_id, reg, val);
         if (std::holds_alternative<std::int64_t>(res)) {
             r = std::get<std::int64_t>(res);
+        }
+        else if (std::holds_alternative<float>(res)) {
+            r = std::get<float>(res);
         }
         else if (std::holds_alternative<std::string>(res)) {
             r = std::get<std::string>(res);

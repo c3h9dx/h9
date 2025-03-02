@@ -66,6 +66,8 @@ bool Bus::recv_thread_forward() {
     bus_frame = forward_queue.top();
     forward_queue.pop();
 
+    ++forward_frames_counter;
+
     for (const auto& [socket, bus_driver] : bus) {
         if (bus_driver->name == bus_frame->origin())
             continue;
@@ -153,7 +155,8 @@ Bus::Bus():
     run(true),
     _forwarding(false),
     sent_frames_counter(MetricsCollector::make_counter("bus.send_frames")),
-    received_frames_counter(MetricsCollector::make_counter("bus.received_frames")) {
+    received_frames_counter(MetricsCollector::make_counter("bus.received_frames")),
+    forward_frames_counter(MetricsCollector::make_counter("bus.forward_frames")) {
     // size_of_send_queue(MetricsCollector::make_counter("bus.size_of_send_queue")) {
     logger = spdlog::get(H9dConfigurator::bus_logger_name);
     frames_logger = spdlog::get(H9dConfigurator::frames_logger_name);
