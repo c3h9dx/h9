@@ -308,7 +308,7 @@ ssize_t RawNode::set_reg(const std::string& origin, std::uint8_t reg, float reg_
     uint32_t tmp_in, tmp_out;
     memcpy(&tmp_in, &reg_val, 4);
 
-    ssize_t ret = set_reg(origin, reg, sizeof(tmp_in), reinterpret_cast<std::uint8_t*>(&tmp_in), reinterpret_cast<std::uint8_t*>(tmp_out));
+    ssize_t ret = set_reg(origin, reg, tmp_in, &tmp_out);
 
     if (reg_after_set) {
         memcpy(reg_after_set, &tmp_out, 4);
@@ -377,7 +377,7 @@ ssize_t RawNode::get_reg(const std::string& origin, std::uint8_t reg, std::uint3
 
 ssize_t RawNode::get_reg(const std::string& origin, std::uint8_t reg, float* reg_val) {
     uint32_t tmp_out;
-    ssize_t ret = get_reg(origin, reg, sizeof(tmp_out), reinterpret_cast<std::uint8_t*>(&tmp_out));
+    ssize_t ret = get_reg(origin, reg, &tmp_out);
     memcpy(reg_val, &tmp_out, 4);
     return ret;
 }
